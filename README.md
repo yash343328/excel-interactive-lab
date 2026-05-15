@@ -109,19 +109,6 @@ excel-interactive-lab/
 
 ---
 
-## 📸 Screenshots
-
-### Welcome Screen
-![Welcome](https://via.placeholder.com/800x450/217346/ffffff?text=Excel+Interactive+Lab+2026+—+Welcome+Screen)
-
-### Data View (After Upload)
-![Data View](https://via.placeholder.com/800x450/f9fffe/217346?text=Spreadsheet+Grid+View+with+Filter+%26+Sort)
-
-### Charts
-![Charts](https://via.placeholder.com/800x450/217346/ffffff?text=Live+Bar+%2F+Line+%2F+Pie+Charts+from+Your+Data)
-
----
-
 ## 🔒 Privacy
 
 > **100% client-side.** Your data never leaves your browser. No file is uploaded to any server. All processing happens locally using JavaScript.
