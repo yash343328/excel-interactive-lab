@@ -108,6 +108,11 @@ excel-interactive-lab/
 > Both libraries are loaded via CDN — no installation needed.
 
 ---
+## 📸 Screenshots
+![Preview](Preview.png)
+
+
+---
 
 ## 🔒 Privacy
 
