@@ -1,0 +1,2557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Excel Interactive Lab 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Calibri:wght@400;700&family=Segoe+UI:wght@300;400;600;700&display=swap');
+
+  :root {
+    --excel-green: #217346;
+    --excel-green-light: #2d9b5e;
+    --excel-green-dark: #185a38;
+    --excel-header: #107c41;
+    --excel-ribbon: #217346;
+    --excel-cell-border: #d0d7de;
+    --excel-selected: #cce8ff;
+    --excel-formula-bar: #f3f2f1;
+    --excel-bg: #f8f9fa;
+    --excel-white: #ffffff;
+    --excel-text: #1a1a1a;
+    --excel-gray: #737373;
+    --excel-light-green: #e9f5ee;
+    --excel-tab: #c6efce;
+    --accent-blue: #0078d4;
+    --danger: #d13438;
+    --warning: #ff8c00;
+    --shadow: 0 2px 8px rgba(0,0,0,0.12);
+    --shadow-lg: 0 4px 20px rgba(0,0,0,0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', -apple-system, sans-serif;
+    background: var(--excel-bg);
+    color: var(--excel-text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ─── TITLE BAR ─── */
+  .title-bar {
+    background: var(--excel-green-dark);
+    color: white;
+    padding: 6px 16px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    user-select: none;
+  }
+  .title-bar .excel-icon {
+    background: white;
+    color: var(--excel-green);
+    width: 24px; height: 24px;
+    border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 14px;
+  }
+  .title-bar .file-title { flex: 1; text-align: center; font-size: 13px; }
+  .title-bar .win-btns { display: flex; gap: 6px; }
+  .win-btn {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  .win-btn.red { background: #ff5f57; }
+  .win-btn.yellow { background: #febc2e; }
+  .win-btn.green { background: #28c840; }
+
+  /* ─── RIBBON ─── */
+  .ribbon {
+    background: var(--excel-ribbon);
+    padding: 0;
+  }
+  .ribbon-tabs {
+    display: flex;
+    padding: 0 8px;
+    border-bottom: 2px solid var(--excel-green-dark);
+  }
+  .ribbon-tab {
+    color: rgba(255,255,255,0.85);
+    padding: 8px 16px;
+    font-size: 12px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.15s;
+    user-select: none;
+    font-weight: 400;
+  }
+  .ribbon-tab:hover { background: rgba(255,255,255,0.15); color: white; }
+  .ribbon-tab.active { background: white; color: var(--excel-green); border-bottom: 2px solid white; font-weight: 600; border-radius: 3px 3px 0 0; }
+
+  .ribbon-content {
+    background: white;
+    padding: 8px 16px;
+    display: none;
+    gap: 12px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid #ddd;
+    min-height: 68px;
+    align-items: center;
+  }
+  .ribbon-content.active { display: flex; }
+
+  .ribbon-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-right: 1px solid #e0e0e0;
+  }
+  .ribbon-group:last-child { border-right: none; }
+  .ribbon-group-title { font-size: 10px; color: var(--excel-gray); margin-top: auto; }
+  .ribbon-btns { display: flex; gap: 4px; }
+
+  .rb {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 2px;
+    padding: 4px 8px;
+    border: none; background: none; cursor: pointer;
+    border-radius: 3px;
+    font-size: 10px; color: #333;
+    transition: background 0.1s;
+    min-width: 44px;
+  }
+  .rb:hover { background: var(--excel-light-green); }
+  .rb .icon { font-size: 20px; line-height: 1; }
+  .rb.sm { min-width: 30px; padding: 3px 6px; }
+  .rb.sm .icon { font-size: 14px; }
+
+  /* ─── FORMULA BAR ─── */
+  .formula-bar {
+    background: var(--excel-formula-bar);
+    border-bottom: 1px solid #ccc;
+    display: flex;
+    align-items: center;
+    padding: 3px 8px;
+    gap: 8px;
+    height: 32px;
+  }
+  .cell-ref-box {
+    background: white;
+    border: 1px solid #ccc;
+    padding: 2px 8px;
+    font-size: 12px;
+    width: 70px;
+    text-align: center;
+    font-family: 'Calibri', monospace;
+    border-radius: 2px;
+    outline: none;
+  }
+  .formula-divider { color: #999; font-size: 16px; }
+  .formula-input {
+    flex: 1;
+    background: white;
+    border: 1px solid #ccc;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-family: 'Calibri', monospace;
+    border-radius: 2px;
+    outline: none;
+  }
+  .formula-input:focus, .cell-ref-box:focus { border-color: var(--excel-green); box-shadow: 0 0 0 1px var(--excel-green); }
+
+  /* ─── MAIN LAYOUT ─── */
+  .main-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    flex: 1;
+    overflow: hidden;
+    height: calc(100vh - 170px);
+  }
+
+  /* ─── SIDEBAR ─── */
+  .sidebar {
+    background: white;
+    border-right: 1px solid #ddd;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .sidebar-section {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .sidebar-section h3 {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--excel-green);
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  /* Upload Zone */
+  .upload-zone {
+    border: 2px dashed #cce0d0;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #fafffe;
+    position: relative;
+  }
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--excel-green);
+    background: var(--excel-light-green);
+  }
+  .upload-zone .upload-icon { font-size: 32px; margin-bottom: 8px; }
+  .upload-zone p { font-size: 12px; color: #666; line-height: 1.5; }
+  .upload-zone p b { color: var(--excel-green); }
+  .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .file-info-badge {
+    background: var(--excel-light-green);
+    border: 1px solid #b3d9c2;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 11px;
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 8px;
+  }
+  .file-info-badge .fi-icon { font-size: 20px; }
+  .file-info-badge .fi-text { flex: 1; }
+  .file-info-badge .fi-name { font-weight: 600; color: var(--excel-green-dark); word-break: break-all; }
+  .file-info-badge .fi-size { color: #666; }
+
+  /* Operation List */
+  .op-list { display: flex; flex-direction: column; gap: 4px; }
+  .op-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.15s;
+    border: 1px solid transparent;
+  }
+  .op-item:hover { background: var(--excel-light-green); border-color: #c0e0d0; }
+  .op-item.active { background: var(--excel-green); color: white; border-color: var(--excel-green-dark); }
+  .op-item .op-icon { font-size: 16px; width: 24px; text-align: center; }
+  .op-item .op-text { flex: 1; }
+  .op-item .op-text .op-name { font-weight: 600; }
+  .op-item .op-text .op-desc { font-size: 10px; opacity: 0.75; }
+  .op-item.active .op-desc { opacity: 0.9; }
+
+  /* Sheet tabs in sidebar */
+  .sheet-tabs-list { display: flex; flex-direction: column; gap: 3px; }
+  .sheet-tab-item {
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    background: var(--excel-light-green);
+    border: 1px solid #c0e0d0;
+    color: var(--excel-green-dark);
+    transition: all 0.1s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .sheet-tab-item:hover { background: var(--excel-tab); }
+  .sheet-tab-item.active { background: var(--excel-green); color: white; border-color: var(--excel-green-dark); }
+
+  /* ─── WORKSPACE ─── */
+  .workspace {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: var(--excel-bg);
+  }
+
+  /* ─── WELCOME SCREEN ─── */
+  .welcome-screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    gap: 30px;
+  }
+  .welcome-logo { font-size: 80px; }
+  .welcome-title {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--excel-green);
+    text-align: center;
+  }
+  .welcome-sub { font-size: 16px; color: #666; text-align: center; max-width: 500px; line-height: 1.6; }
+
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    max-width: 700px;
+    width: 100%;
+  }
+  .feature-card {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+    transition: all 0.2s;
+  }
+  .feature-card:hover { border-color: var(--excel-green); box-shadow: var(--shadow); transform: translateY(-2px); }
+  .feature-card .fc-icon { font-size: 28px; margin-bottom: 8px; }
+  .feature-card .fc-title { font-size: 13px; font-weight: 700; color: #333; margin-bottom: 4px; }
+  .feature-card .fc-desc { font-size: 11px; color: #888; line-height: 1.4; }
+
+  /* ─── SPREADSHEET VIEW ─── */
+  .spreadsheet-container {
+    flex: 1;
+    overflow: auto;
+    background: white;
+    border: 1px solid #ddd;
+    margin: 8px;
+    border-radius: 4px;
+    box-shadow: var(--shadow);
+  }
+  .spreadsheet-table {
+    border-collapse: collapse;
+    font-size: 12px;
+    font-family: 'Calibri', 'Segoe UI', sans-serif;
+    min-width: 100%;
+  }
+  .spreadsheet-table th {
+    background: #f2f2f2;
+    border: 1px solid var(--excel-cell-border);
+    padding: 3px 8px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 11px;
+    color: #333;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    min-width: 80px;
+    user-select: none;
+    cursor: pointer;
+  }
+  .spreadsheet-table th.row-header {
+    min-width: 40px;
+    background: #f2f2f2;
+    left: 0;
+    z-index: 11;
+    color: #555;
+  }
+  .spreadsheet-table th:hover { background: #d8e8d8; }
+  .spreadsheet-table td {
+    border: 1px solid var(--excel-cell-border);
+    padding: 3px 8px;
+    cursor: cell;
+    white-space: nowrap;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    position: relative;
+  }
+  .spreadsheet-table td.row-num {
+    background: #f2f2f2;
+    text-align: center;
+    color: #666;
+    font-size: 11px;
+    cursor: default;
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    user-select: none;
+  }
+  .spreadsheet-table td.selected { background: var(--excel-selected) !important; }
+  .spreadsheet-table tr:hover td:not(.row-num) { background: #f5faf7; }
+  .spreadsheet-table tr td.header-row { background: #217346 !important; color: white !important; font-weight: 700; }
+
+  /* ─── OPERATION PANEL ─── */
+  .op-panel {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .op-header {
+    background: white;
+    border-radius: 8px;
+    padding: 16px 20px;
+    border: 1px solid #ddd;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow: var(--shadow);
+  }
+  .op-header .oh-icon { font-size: 36px; }
+  .op-header .oh-title { font-size: 18px; font-weight: 700; color: var(--excel-green); }
+  .op-header .oh-desc { font-size: 13px; color: #666; margin-top: 2px; line-height: 1.4; }
+
+  .op-card {
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .op-card-header {
+    background: var(--excel-green);
+    color: white;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .op-card-body { padding: 16px; }
+
+  .form-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 10px; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group label { font-size: 11px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.3px; }
+  .form-group select, .form-group input {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-size: 12px;
+    outline: none;
+    background: white;
+    font-family: inherit;
+    min-width: 120px;
+    transition: border-color 0.15s;
+  }
+  .form-group select:focus, .form-group input:focus { border-color: var(--excel-green); box-shadow: 0 0 0 2px rgba(33,115,70,0.1); }
+
+  .btn {
+    padding: 7px 16px;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .btn-green { background: var(--excel-green); color: white; }
+  .btn-green:hover { background: var(--excel-green-dark); }
+  .btn-outline { background: white; color: var(--excel-green); border: 1px solid var(--excel-green); }
+  .btn-outline:hover { background: var(--excel-light-green); }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-danger:hover { background: #b02020; }
+  .btn-blue { background: var(--accent-blue); color: white; }
+  .btn-blue:hover { background: #006ab8; }
+
+  /* Results Table */
+  .result-table-wrap {
+    overflow: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    max-height: 300px;
+  }
+  .result-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    font-family: 'Calibri', sans-serif;
+  }
+  .result-table th {
+    background: var(--excel-green);
+    color: white;
+    padding: 6px 12px;
+    text-align: left;
+    font-weight: 600;
+    position: sticky; top: 0;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  .result-table td {
+    padding: 5px 12px;
+    border-bottom: 1px solid #f0f0f0;
+    white-space: nowrap;
+  }
+  .result-table tr:nth-child(even) td { background: #f9fffe; }
+  .result-table tr:hover td { background: var(--excel-light-green); }
+
+  /* Stats Grid */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+  .stat-box {
+    background: var(--excel-light-green);
+    border: 1px solid #c0e0d0;
+    border-radius: 6px;
+    padding: 10px;
+    text-align: center;
+  }
+  .stat-box .sb-label { font-size: 10px; color: #555; font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
+  .stat-box .sb-value { font-size: 20px; font-weight: 700; color: var(--excel-green-dark); }
+  .stat-box .sb-unit { font-size: 10px; color: #888; }
+
+  /* Info boxes */
+  .info-box { padding: 10px 14px; border-radius: 6px; font-size: 12px; line-height: 1.6; margin-top: 8px; }
+  .info-green { background: #e9f5ee; border-left: 3px solid var(--excel-green); color: #1a4a2e; }
+  .info-blue { background: #e3f0ff; border-left: 3px solid var(--accent-blue); color: #0a3055; }
+  .info-orange { background: #fff4e0; border-left: 3px solid var(--warning); color: #5a3500; }
+  .info-red { background: #fde8e8; border-left: 3px solid var(--danger); color: #5a0505; }
+
+  /* Function Guide */
+  .func-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .func-item {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 8px 12px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .func-item:hover { border-color: var(--excel-green); background: var(--excel-light-green); }
+  .func-item .fi-func { font-weight: 700; color: var(--excel-green); font-family: 'Calibri', monospace; font-size: 12px; }
+  .func-item .fi-desc { color: #555; margin-top: 2px; }
+
+  /* Chart canvas */
+  .chart-wrap {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 12px;
+    height: 300px;
+    position: relative;
+  }
+
+  /* Tag */
+  .tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    background: var(--excel-light-green);
+    color: var(--excel-green-dark);
+    border: 1px solid #c0e0d0;
+  }
+  .tag.blue { background: #e3f0ff; color: #0052a3; border-color: #b3d4f5; }
+  .tag.orange { background: #fff4e0; color: #8b4800; border-color: #f5dba0; }
+
+  /* Shortcut table */
+  .shortcut-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .shortcut-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 10px;
+    background: #f9f9f9;
+    border-radius: 4px;
+    border: 1px solid #eee;
+    font-size: 11px;
+  }
+  .kbd {
+    background: #e8e8e8;
+    border: 1px solid #ccc;
+    border-bottom: 2px solid #aaa;
+    border-radius: 3px;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-family: monospace;
+    white-space: nowrap;
+    color: #333;
+  }
+
+  /* Status Bar */
+  .status-bar {
+    background: var(--excel-green);
+    color: rgba(255,255,255,0.9);
+    padding: 3px 16px;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+  }
+  .status-bar .sb-left { display: flex; gap: 16px; align-items: center; }
+  .status-bar .sb-right { display: flex; gap: 16px; align-items: center; }
+  .status-pill {
+    background: rgba(255,255,255,0.15);
+    border-radius: 10px;
+    padding: 1px 8px;
+    font-size: 10px;
+  }
+  .status-ready { color: #90ee90; font-weight: 600; }
+
+  /* Sheet tabs bottom */
+  .sheet-tabs-bar {
+    background: #f0f0f0;
+    border-top: 1px solid #ccc;
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    height: 28px;
+    gap: 2px;
+    overflow-x: auto;
+  }
+  .sheet-tab {
+    padding: 4px 14px;
+    font-size: 11px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-radius: 3px 3px 0 0;
+    background: #ddd;
+    color: #555;
+    white-space: nowrap;
+    transition: all 0.1s;
+  }
+  .sheet-tab:hover { background: #ccc; }
+  .sheet-tab.active { background: white; color: var(--excel-green); font-weight: 600; border-color: #ccc; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: #f1f1f1; }
+  ::-webkit-scrollbar-thumb { background: #c0c0c0; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #a0a0a0; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 40px; right: 20px;
+    background: #333;
+    color: white;
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-size: 13px;
+    z-index: 9999;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s;
+    pointer-events: none;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.success { background: var(--excel-green); }
+  .toast.error { background: var(--danger); }
+
+  /* Loading */
+  .loading-overlay {
+    position: fixed; inset: 0;
+    background: rgba(255,255,255,0.85);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 9998;
+    gap: 16px;
+    display: none;
+  }
+  .loading-overlay.show { display: flex; }
+  .spinner {
+    width: 40px; height: 40px;
+    border: 4px solid #ddd;
+    border-top-color: var(--excel-green);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .main-layout { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .feature-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Title Bar -->
+<div class="title-bar">
+  <div class="win-btns">
+    <div class="win-btn red"></div>
+    <div class="win-btn yellow"></div>
+    <div class="win-btn green"></div>
+  </div>
+  <div class="excel-icon">X</div>
+  <div class="file-title" id="titleBarName">Microsoft Excel Interactive Lab 2026 — Upload a file to get started</div>
+</div>
+
+<!-- Ribbon Tabs -->
+<div class="ribbon">
+  <div class="ribbon-tabs">
+    <div class="ribbon-tab active" onclick="switchRibbonTab(this,'tab-home')">Home</div>
+    <div class="ribbon-tab" onclick="switchRibbonTab(this,'tab-insert')">Insert</div>
+    <div class="ribbon-tab" onclick="switchRibbonTab(this,'tab-formulas')">Formulas</div>
+    <div class="ribbon-tab" onclick="switchRibbonTab(this,'tab-data')">Data</div>
+    <div class="ribbon-tab" onclick="switchRibbonTab(this,'tab-view')">View</div>
+  </div>
+
+  <div id="tab-home" class="ribbon-content active">
+    <div class="ribbon-group">
+      <div class="ribbon-btns">
+        <button class="rb" onclick="triggerFileUpload()"><span class="icon">📂</span>Open</button>
+        <button class="rb" onclick="exportFile('xlsx')"><span class="icon">💾</span>Save</button>
+        <button class="rb" onclick="exportFile('csv')"><span class="icon">📄</span>CSV</button>
+      </div>
+      <div class="ribbon-group-title">File</div>
+    </div>
+    <div class="ribbon-group">
+      <div class="ribbon-btns">
+        <button class="rb sm" onclick="applyFormat('bold')"><span class="icon">𝐁</span>Bold</button>
+        <button class="rb sm" onclick="applyFormat('italic')"><span class="icon">𝐼</span>Italic</button>
+        <button class="rb sm" onclick="applyFormat('underline')"><span class="icon">U̲</span>Underline</button>
+      </div>
+      <div class="ribbon-group-title">Font</div>
+    </div>
+    <div class="ribbon-group">
+      <div class="ribbon-btns">
+        <button class="rb" onclick="selectOp('sort')"><span class="icon">🔤</span>Sort</button>
+        <button class="rb" onclick="selectOp('filter')"><span class="icon">🔽</span>Filter</button>
+      </div>
+      <div class="ribbon-group-title">Editing</div>
+    </div>
+    <div class="ribbon-group">
+      <div class="ribbon-btns">
+        <button class="rb" onclick="selectOp('find_replace')"><span class="icon">🔍</span>Find&Replace</button>
+      </div>
+      <div class="ribbon-group-title">Find</div>
+    </div>
+  </div>
+
+  <div id="tab-insert" class="ribbon-content">
+    <div class="ribbon-group">
+      <div class="ribbon-btns">
+        <button class="rb" onclick="selectOp('chart')"><span class="icon">📊</span>Chart</button>
+        <button class="rb" onclick="selectOp('pivot')"><span class="icon">📋</span>PivotTable</button>
+      </div>
+      <div class="ribbon-group-title">Charts & Tables</div>
+    </div>
+  </div>
+
+  <div id="tab-formulas" class="ribbon-content">
+    <div class="ribbon-group">
+      <div class="ribbon-btns">
+        <button class="rb" onclick="selectOp('formulas')"><span class="icon">ƒ</span>Functions</button>
+        <button class="rb" onclick="selectOp('stats')"><span class="icon">📈</span>Statistics</button>
+      </div>
+      <div class="ribbon-group-title">Functions</div>
+    </div>
+    <div class="ribbon-group">
+      <div class="ribbon-btns">
+        <button class="rb" onclick="selectOp('vlookup')"><span class="icon">🔗</span>VLOOKUP</button>
+        <button class="rb" onclick="selectOp('if_formula')"><span class="icon">❓</span>IF Logic</button>
+      </div>
+      <div class="ribbon-group-title">Lookup & Logic</div>
+    </div>
+  </div>
+
+  <div id="tab-data" class="ribbon-content">
+    <div class="ribbon-group">
+      <div class="ribbon-btns">
+        <button class="rb" onclick="selectOp('clean')"><span class="icon">🧹</span>Clean Data</button>
+        <button class="rb" onclick="selectOp('duplicates')"><span class="icon">🔁</span>Duplicates</button>
+      </div>
+      <div class="ribbon-group-title">Data Tools</div>
+    </div>
+    <div class="ribbon-group">
+      <div class="ribbon-btns">
+        <button class="rb" onclick="selectOp('conditional')"><span class="icon">🎨</span>Conditional</button>
+      </div>
+      <div class="ribbon-group-title">Formatting</div>
+    </div>
+  </div>
+
+  <div id="tab-view" class="ribbon-content">
+    <div class="ribbon-group">
+      <div class="ribbon-btns">
+        <button class="rb" onclick="selectOp('shortcuts')"><span class="icon">⌨️</span>Shortcuts</button>
+        <button class="rb" onclick="selectOp('guide')"><span class="icon">📚</span>Guide</button>
+      </div>
+      <div class="ribbon-group-title">Help</div>
+    </div>
+  </div>
+</div>
+
+<!-- Formula Bar -->
+<div class="formula-bar">
+  <input class="cell-ref-box" id="cellRef" value="A1" readonly>
+  <span class="formula-divider">fx</span>
+  <input class="formula-input" id="formulaInput" placeholder="Enter formula or select a cell...">
+</div>
+
+<!-- Main Layout -->
+<div class="main-layout">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+
+    <!-- Upload Section -->
+    <div class="sidebar-section">
+      <h3>📁 File Upload</h3>
+      <div class="upload-zone" id="uploadZone" ondragover="handleDragOver(event)" ondrop="handleDrop(event)" ondragleave="handleDragLeave(event)">
+        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" onchange="handleFileUpload(event)">
+        <div class="upload-icon">📊</div>
+        <p><b>Click to upload</b> or drag & drop<br>Excel (.xlsx, .xls) or CSV</p>
+      </div>
+      <div class="file-info-badge" id="fileInfoBadge" style="display:none">
+        <span class="fi-icon">📊</span>
+        <div class="fi-text">
+          <div class="fi-name" id="fiFileName">—</div>
+          <div class="fi-size" id="fiFileSize">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sheet Tabs -->
+    <div class="sidebar-section" id="sheetListSection" style="display:none">
+      <h3>📋 Sheets</h3>
+      <div class="sheet-tabs-list" id="sheetTabsList"></div>
+    </div>
+
+    <!-- Operations -->
+    <div class="sidebar-section">
+      <h3>⚙️ Operations</h3>
+      <div class="op-list">
+        <div class="op-item active" id="op-view" onclick="selectOp('view')">
+          <span class="op-icon">👁️</span>
+          <div class="op-text">
+            <div class="op-name">View Data</div>
+            <div class="op-desc">Preview spreadsheet</div>
+          </div>
+        </div>
+        <div class="op-item" id="op-stats" onclick="selectOp('stats')">
+          <span class="op-icon">📈</span>
+          <div class="op-text">
+            <div class="op-name">Statistics</div>
+            <div class="op-desc">Sum, Avg, Min, Max, Count</div>
+          </div>
+        </div>
+        <div class="op-item" id="op-sort" onclick="selectOp('sort')">
+          <span class="op-icon">🔤</span>
+          <div class="op-text">
+            <div class="op-name">Sort</div>
+            <div class="op-desc">Sort rows by column</div>
+          </div>
+        </div>
+        <div class="op-item" id="op-filter" onclick="selectOp('filter')">
+          <span class="op-icon">🔽</span>
+          <div class="op-text">
+            <div class="op-name">Filter</div>
+            <div class="op-desc">Filter rows by condition</div>
+          </div>
+        </div>
+        <div class="op-item" id="op-find_replace" onclick="selectOp('find_replace')">
+          <span class="op-icon">🔍</span>
+          <div class="op-text">
+            <div class="op-name">Find & Replace</div>
+            <div class="op-desc">Search & replace values</div>
+          </div>
+        </div>
+        <div class="op-item" id="op-formulas" onclick="selectOp('formulas')">
+          <span class="op-icon">ƒx</span>
+          <div class="op-text">
+            <div class="op-name">Excel Formulas</div>
+            <div class="op-desc">SUM, IF, VLOOKUP, etc.</div>
+          </div>
+        </div>
+        <div class="op-item" id="op-chart" onclick="selectOp('chart')">
+          <span class="op-icon">📊</span>
+          <div class="op-text">
+            <div class="op-name">Charts</div>
+            <div class="op-desc">Bar, Line, Pie, etc.</div>
+          </div>
+        </div>
+        <div class="op-item" id="op-pivot" onclick="selectOp('pivot')">
+          <span class="op-icon">📋</span>
+          <div class="op-text">
+            <div class="op-name">Pivot Table</div>
+            <div class="op-desc">Group & summarize data</div>
+          </div>
+        </div>
+        <div class="op-item" id="op-vlookup" onclick="selectOp('vlookup')">
+          <span class="op-icon">🔗</span>
+          <div class="op-text">
+            <div class="op-name">VLOOKUP</div>
+            <div class="op-desc">Lookup values in table</div>
+          </div>
+        </div>
+        <div class="op-item" id="op-if_formula" onclick="selectOp('if_formula')">
+          <span class="op-icon">❓</span>
+          <div class="op-text">
+            <div class="op-name">IF Formula</div>
+            <div class="op-desc">Conditional logic</div>
+          </div>
+        </div>
+        <div class="op-item" id="op-duplicates" onclick="selectOp('duplicates')">
+          <span class="op-icon">🔁</span>
+          <div class="op-text">
+            <div class="op-name">Remove Duplicates</div>
+            <div class="op-desc">Find & clean duplicates</div>
+          </div>
+        </div>
+        <div class="op-item" id="op-clean" onclick="selectOp('clean')">
+          <span class="op-icon">🧹</span>
+          <div class="op-text">
+            <div class="op-name">Clean Data</div>
+            <div class="op-desc">Trim, fix empty cells</div>
+          </div>
+        </div>
+        <div class="op-item" id="op-conditional" onclick="selectOp('conditional')">
+          <span class="op-icon">🎨</span>
+          <div class="op-text">
+            <div class="op-name">Conditional Formatting</div>
+            <div class="op-desc">Highlight by rules</div>
+          </div>
+        </div>
+        <div class="op-item" id="op-shortcuts" onclick="selectOp('shortcuts')">
+          <span class="op-icon">⌨️</span>
+          <div class="op-text">
+            <div class="op-name">Keyboard Shortcuts</div>
+            <div class="op-desc">All Excel shortcuts</div>
+          </div>
+        </div>
+        <div class="op-item" id="op-guide" onclick="selectOp('guide')">
+          <span class="op-icon">📚</span>
+          <div class="op-text">
+            <div class="op-name">Complete Guide</div>
+            <div class="op-desc">Learn all Excel features</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Workspace -->
+  <div class="workspace" id="workspace">
+
+    <!-- Welcome Screen -->
+    <div class="welcome-screen" id="welcomeScreen">
+      <div class="welcome-logo">📊</div>
+      <div class="welcome-title">Excel Interactive Lab 2026</div>
+      <div class="welcome-sub">Upload any Excel or CSV file to perform operations, analyze data, create charts, use formulas and learn all MS Excel features.</div>
+      <div class="feature-grid">
+        <div class="feature-card" onclick="selectOp('formulas')">
+          <div class="fc-icon">ƒx</div>
+          <div class="fc-title">400+ Formulas</div>
+          <div class="fc-desc">SUM, IF, VLOOKUP, INDEX, MATCH and more</div>
+        </div>
+        <div class="feature-card" onclick="selectOp('chart')">
+          <div class="fc-icon">📊</div>
+          <div class="fc-title">Charts & Graphs</div>
+          <div class="fc-desc">Bar, Line, Pie, Scatter, Area charts</div>
+        </div>
+        <div class="feature-card" onclick="selectOp('pivot')">
+          <div class="fc-icon">📋</div>
+          <div class="fc-title">Pivot Tables</div>
+          <div class="fc-desc">Group, summarize & analyze data</div>
+        </div>
+        <div class="feature-card" onclick="selectOp('sort')">
+          <div class="fc-icon">🔤</div>
+          <div class="fc-title">Sort & Filter</div>
+          <div class="fc-desc">Organize and find your data fast</div>
+        </div>
+        <div class="feature-card" onclick="selectOp('conditional')">
+          <div class="fc-icon">🎨</div>
+          <div class="fc-title">Conditional Formatting</div>
+          <div class="fc-desc">Visually highlight data patterns</div>
+        </div>
+        <div class="feature-card" onclick="selectOp('shortcuts')">
+          <div class="fc-icon">⌨️</div>
+          <div class="fc-title">Shortcuts Guide</div>
+          <div class="fc-desc">Master Excel keyboard shortcuts</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Op Panel (shown after upload or op select) -->
+    <div class="op-panel" id="opPanel" style="display:none"></div>
+
+    <!-- Sheet Tabs Bar (bottom) -->
+    <div class="sheet-tabs-bar" id="sheetTabsBar" style="display:none"></div>
+  </div>
+
+</div>
+
+<!-- Status Bar -->
+<div class="status-bar">
+  <div class="sb-left">
+    <span class="status-ready" id="statusText">Ready</span>
+    <span class="status-pill" id="statusRows">Rows: —</span>
+    <span class="status-pill" id="statusCols">Cols: —</span>
+    <span class="status-pill" id="statusSheets">Sheets: —</span>
+  </div>
+  <div class="sb-right">
+    <span id="statusSum">Sum: —</span>
+    <span id="statusAvg">Avg: —</span>
+    <span style="opacity:0.7">May 2026 | Excel Lab</span>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Loading -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div style="font-size:14px; color:#333">Processing...</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════
+let workbook = null;
+let currentSheet = null;
+let currentSheetName = '';
+let currentData = [];
+let currentHeaders = [];
+let currentOp = 'view';
+let chartInstance = null;
+let fileName = '';
+
+// ═══════════════════════════════════════════════
+//  RIBBON TABS
+// ═══════════════════════════════════════════════
+function switchRibbonTab(el, tabId) {
+  document.querySelectorAll('.ribbon-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.ribbon-content').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(tabId).classList.add('active');
+}
+
+// ═══════════════════════════════════════════════
+//  FILE HANDLING
+// ═══════════════════════════════════════════════
+function triggerFileUpload() {
+  document.getElementById('fileInput').click();
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.add('drag-over');
+}
+function handleDragLeave(e) {
+  document.getElementById('uploadZone').classList.remove('drag-over');
+}
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+}
+
+function handleFileUpload(e) {
+  const file = e.target.files[0];
+  if (file) processFile(file);
+}
+
+function processFile(file) {
+  showLoading(true);
+  fileName = file.name;
+  const ext = file.name.split('.').pop().toLowerCase();
+  const reader = new FileReader();
+
+  reader.onload = (e) => {
+    try {
+      const data = e.target.result;
+      if (ext === 'csv') {
+        workbook = XLSX.read(data, { type: 'string' });
+      } else {
+        workbook = XLSX.read(data, { type: 'array' });
+      }
+
+      // Update UI
+      document.getElementById('fiFileName').textContent = file.name;
+      document.getElementById('fiFileSize').textContent = formatBytes(file.size) + ' · ' + workbook.SheetNames.length + ' sheet(s)';
+      document.getElementById('fileInfoBadge').style.display = 'flex';
+      document.getElementById('titleBarName').textContent = file.name + ' — Excel Interactive Lab 2026';
+
+      // Build sheet list
+      renderSheetList();
+      loadSheet(workbook.SheetNames[0]);
+      showLoading(false);
+      showToast('✅ File loaded: ' + file.name, 'success');
+
+    } catch(err) {
+      showLoading(false);
+      showToast('❌ Error: ' + err.message, 'error');
+    }
+  };
+
+  if (ext === 'csv') {
+    reader.readAsText(file);
+  } else {
+    reader.readAsArrayBuffer(file);
+  }
+}
+
+function renderSheetList() {
+  const list = document.getElementById('sheetTabsList');
+  const bar = document.getElementById('sheetTabsBar');
+  list.innerHTML = '';
+  bar.innerHTML = '';
+  document.getElementById('sheetListSection').style.display = 'block';
+  document.getElementById('sheetTabsBar').style.display = 'flex';
+
+  workbook.SheetNames.forEach((name, i) => {
+    const item = document.createElement('div');
+    item.className = 'sheet-tab-item' + (i === 0 ? ' active' : '');
+    item.innerHTML = '📄 ' + name;
+    item.onclick = () => { loadSheet(name); setActiveSheetTab(name); };
+    list.appendChild(item);
+
+    const tab = document.createElement('div');
+    tab.className = 'sheet-tab' + (i === 0 ? ' active' : '');
+    tab.textContent = name;
+    tab.dataset.sheetName = name;
+    tab.onclick = () => { loadSheet(name); setActiveSheetTab(name); };
+    bar.appendChild(tab);
+  });
+
+  document.getElementById('statusSheets').textContent = 'Sheets: ' + workbook.SheetNames.length;
+}
+
+function setActiveSheetTab(name) {
+  document.querySelectorAll('.sheet-tab-item').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.sheet-tab').forEach(el => {
+    el.classList.toggle('active', el.dataset.sheetName === name);
+  });
+  document.querySelectorAll('.sheet-tab-item').forEach(el => {
+    if (el.textContent.replace('📄 ','') === name) el.classList.add('active');
+  });
+}
+
+function loadSheet(sheetName) {
+  currentSheetName = sheetName;
+  currentSheet = workbook.Sheets[sheetName];
+  const json = XLSX.utils.sheet_to_json(currentSheet, { header: 1, defval: '' });
+  if (json.length === 0) { currentData = []; currentHeaders = []; return; }
+
+  currentHeaders = json[0].map(h => String(h));
+  currentData = json.slice(1).map(row => {
+    const obj = {};
+    currentHeaders.forEach((h, i) => obj[h] = row[i] !== undefined ? row[i] : '');
+    return obj;
+  });
+
+  document.getElementById('statusRows').textContent = 'Rows: ' + currentData.length;
+  document.getElementById('statusCols').textContent = 'Cols: ' + currentHeaders.length;
+
+  // Refresh current op
+  selectOp(currentOp);
+}
+
+// ═══════════════════════════════════════════════
+//  OPERATION SELECTOR
+// ═══════════════════════════════════════════════
+function selectOp(op) {
+  currentOp = op;
+
+  // Update sidebar active
+  document.querySelectorAll('.op-item').forEach(el => el.classList.remove('active'));
+  const opEl = document.getElementById('op-' + op);
+  if (opEl) opEl.classList.add('active');
+
+  // Hide welcome, show panel
+  document.getElementById('welcomeScreen').style.display = 'none';
+  document.getElementById('opPanel').style.display = 'flex';
+
+  const panel = document.getElementById('opPanel');
+  panel.innerHTML = '';
+
+  switch(op) {
+    case 'view':       renderView(panel); break;
+    case 'stats':      renderStats(panel); break;
+    case 'sort':       renderSort(panel); break;
+    case 'filter':     renderFilter(panel); break;
+    case 'find_replace': renderFindReplace(panel); break;
+    case 'formulas':   renderFormulas(panel); break;
+    case 'chart':      renderChart(panel); break;
+    case 'pivot':      renderPivot(panel); break;
+    case 'vlookup':    renderVlookup(panel); break;
+    case 'if_formula': renderIfFormula(panel); break;
+    case 'duplicates': renderDuplicates(panel); break;
+    case 'clean':      renderClean(panel); break;
+    case 'conditional':renderConditional(panel); break;
+    case 'shortcuts':  renderShortcuts(panel); break;
+    case 'guide':      renderGuide(panel); break;
+    default:           renderView(panel);
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  RENDER OPERATIONS
+// ═══════════════════════════════════════════════
+
+function noFileMsg() {
+  return `<div class="info-box info-orange">📂 <b>No file loaded.</b> Please upload an Excel or CSV file from the sidebar first to use this feature.</div>`;
+}
+
+// ─── VIEW DATA ───
+function renderView(panel) {
+  if (!workbook) {
+    panel.innerHTML = `
+      <div class="op-header"><span class="oh-icon">👁️</span><div><div class="oh-title">View Data</div><div class="oh-desc">Upload a file to see your spreadsheet data here</div></div></div>
+      ${noFileMsg()}
+      <div class="op-card"><div class="op-card-header">📌 About This Tool</div><div class="op-card-body">
+        <div class="info-box info-green">Excel Interactive Lab lets you open any Excel or CSV file and perform all operations right here in your browser. Your data stays private — nothing is uploaded to any server.</div>
+      </div></div>`;
+    return;
+  }
+  panel.innerHTML = `
+    <div class="op-header"><span class="oh-icon">👁️</span><div><div class="oh-title">Data View — ${currentSheetName}</div><div class="oh-desc">${currentData.length} rows × ${currentHeaders.length} columns</div></div></div>`;
+  const wrap = document.createElement('div');
+  wrap.className = 'spreadsheet-container';
+  wrap.style.flex = '1';
+  wrap.innerHTML = buildTableHTML(currentHeaders, currentData, 200);
+  panel.appendChild(wrap);
+}
+
+function buildTableHTML(headers, data, maxRows) {
+  if (!headers.length) return '<div style="padding:20px; color:#888">No data in this sheet.</div>';
+  const cols = headers.map(h => `<th>${escHtml(String(h))}</th>`).join('');
+  const rows = data.slice(0, maxRows).map((row, i) => {
+    const cells = headers.map(h => `<td onclick="selectCell(this,'${escHtml(h)}')">${escHtml(String(row[h] ?? ''))}</td>`).join('');
+    return `<tr><td class="row-num">${i+1}</td>${cells}</tr>`;
+  }).join('');
+  const moreRow = data.length > maxRows ? `<tr><td colspan="${headers.length+1}" style="text-align:center; padding:8px; color:#888; font-style:italic">... and ${data.length - maxRows} more rows (showing first ${maxRows})</td></tr>` : '';
+  return `<table class="spreadsheet-table"><thead><tr><th class="row-header">#</th>${cols}</tr></thead><tbody>${rows}${moreRow}</tbody></table>`;
+}
+
+function selectCell(el, col) {
+  document.querySelectorAll('.spreadsheet-table td.selected').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  const row = el.closest('tr');
+  const rowNum = row.querySelector('.row-num').textContent;
+  const colLetter = String.fromCharCode(64 + el.cellIndex);
+  document.getElementById('cellRef').value = colLetter + rowNum;
+  document.getElementById('formulaInput').value = el.textContent;
+}
+
+// ─── STATISTICS ───
+function renderStats(panel) {
+  panel.innerHTML = `<div class="op-header"><span class="oh-icon">📈</span><div><div class="oh-title">Statistics & Calculations</div><div class="oh-desc">SUM, AVERAGE, MIN, MAX, COUNT and more for your data columns</div></div></div>`;
+
+  if (!workbook) { panel.insertAdjacentHTML('beforeend', noFileMsg()); renderStatsGuide(panel); return; }
+
+  const numCols = currentHeaders.filter(h => currentData.some(r => !isNaN(parseFloat(r[h])) && r[h] !== ''));
+
+  const card = document.createElement('div');
+  card.className = 'op-card';
+  card.innerHTML = `<div class="op-card-header">⚙️ Select Column & Operation</div>
+  <div class="op-card-body">
+    <div class="form-row">
+      <div class="form-group"><label>Column</label>
+        <select id="statsCol">${currentHeaders.map(h=>`<option>${h}</option>`).join('')}</select>
+      </div>
+      <button class="btn btn-green" onclick="calcStats()">📊 Calculate All</button>
+    </div>
+    <div id="statsResult"></div>
+  </div>`;
+  panel.appendChild(card);
+  renderStatsGuide(panel);
+  if (numCols.length) { document.getElementById('statsCol').value = numCols[0]; calcStats(); }
+}
+
+function calcStats() {
+  const col = document.getElementById('statsCol').value;
+  const vals = currentData.map(r => parseFloat(r[col])).filter(v => !isNaN(v));
+  if (!vals.length) { document.getElementById('statsResult').innerHTML = '<div class="info-box info-orange">No numeric values in this column.</div>'; return; }
+
+  const sum = vals.reduce((a,b)=>a+b,0);
+  const avg = sum/vals.length;
+  const min = Math.min(...vals);
+  const max = Math.max(...vals);
+  const sorted = [...vals].sort((a,b)=>a-b);
+  const med = sorted.length % 2 ? sorted[Math.floor(sorted.length/2)] : (sorted[sorted.length/2-1]+sorted[sorted.length/2])/2;
+  const variance = vals.reduce((a,b)=>a+(b-avg)**2,0)/vals.length;
+  const stddev = Math.sqrt(variance);
+
+  document.getElementById('statusSum').textContent = 'Sum: ' + fmt(sum);
+  document.getElementById('statusAvg').textContent = 'Avg: ' + fmt(avg);
+
+  document.getElementById('statsResult').innerHTML = `
+    <div class="stats-grid" style="margin-top:12px">
+      <div class="stat-box"><div class="sb-label">SUM</div><div class="sb-value">${fmt(sum)}</div></div>
+      <div class="stat-box"><div class="sb-label">AVERAGE</div><div class="sb-value">${fmt(avg)}</div></div>
+      <div class="stat-box"><div class="sb-label">MIN</div><div class="sb-value">${fmt(min)}</div></div>
+      <div class="stat-box"><div class="sb-label">MAX</div><div class="sb-value">${fmt(max)}</div></div>
+      <div class="stat-box"><div class="sb-label">COUNT</div><div class="sb-value">${vals.length}</div></div>
+      <div class="stat-box"><div class="sb-label">MEDIAN</div><div class="sb-value">${fmt(med)}</div></div>
+      <div class="stat-box"><div class="sb-label">STD DEV</div><div class="sb-value">${fmt(stddev)}</div></div>
+      <div class="stat-box"><div class="sb-label">VARIANCE</div><div class="sb-value">${fmt(variance)}</div></div>
+      <div class="stat-box"><div class="sb-label">RANGE</div><div class="sb-value">${fmt(max-min)}</div></div>
+    </div>
+    <div class="info-box info-green" style="margin-top:10px">
+      <b>Excel Formulas for column "${col}":</b><br>
+      =SUM(A:A) → ${fmt(sum)}<br>
+      =AVERAGE(A:A) → ${fmt(avg)}<br>
+      =MIN(A:A) → ${fmt(min)}<br>
+      =MAX(A:A) → ${fmt(max)}<br>
+      =COUNT(A:A) → ${vals.length}<br>
+      =MEDIAN(A:A) → ${fmt(med)}<br>
+      =STDEV(A:A) → ${fmt(stddev)}
+    </div>`;
+}
+
+function renderStatsGuide(panel) {
+  panel.insertAdjacentHTML('beforeend', `
+    <div class="op-card"><div class="op-card-header">📚 Statistical Functions in Excel</div><div class="op-card-body">
+      <div class="func-grid">
+        ${[
+          ['=SUM(A1:A10)','Adds all values in range'],
+          ['=AVERAGE(A1:A10)','Calculates arithmetic mean'],
+          ['=MIN(A1:A10)','Returns smallest value'],
+          ['=MAX(A1:A10)','Returns largest value'],
+          ['=COUNT(A1:A10)','Counts numeric cells'],
+          ['=COUNTA(A1:A10)','Counts non-empty cells'],
+          ['=MEDIAN(A1:A10)','Returns middle value'],
+          ['=MODE(A1:A10)','Returns most frequent value'],
+          ['=STDEV(A1:A10)','Standard deviation (sample)'],
+          ['=VAR(A1:A10)','Variance of a sample'],
+          ['=LARGE(A1:A10,2)','2nd largest value'],
+          ['=SMALL(A1:A10,2)','2nd smallest value'],
+          ['=SUMIF(A:A,">100")','Sum if condition met'],
+          ['=COUNTIF(A:A,"Apple")','Count matching values'],
+          ['=AVERAGEIF(A:A,">0")','Average if condition met'],
+          ['=PERCENTILE(A:A,0.9)','90th percentile value'],
+        ].map(([f,d])=>`<div class="func-item"><div class="fi-func">${f}</div><div class="fi-desc">${d}</div></div>`).join('')}
+      </div>
+    </div></div>`);
+}
+
+// ─── SORT ───
+function renderSort(panel) {
+  panel.innerHTML = `<div class="op-header"><span class="oh-icon">🔤</span><div><div class="oh-title">Sort Data</div><div class="oh-desc">Sort your spreadsheet rows by any column, ascending or descending</div></div></div>`;
+
+  if (!workbook) { panel.insertAdjacentHTML('beforeend', noFileMsg()); }
+
+  const colOpts = currentHeaders.length ? currentHeaders.map(h=>`<option>${h}</option>`).join('') : '<option>—</option>';
+
+  panel.insertAdjacentHTML('beforeend', `
+    <div class="op-card"><div class="op-card-header">⚙️ Sort Configuration</div><div class="op-card-body">
+      <div class="form-row">
+        <div class="form-group"><label>Sort by Column</label><select id="sortCol">${colOpts}</select></div>
+        <div class="form-group"><label>Order</label>
+          <select id="sortOrder">
+            <option value="asc">A → Z (Ascending)</option>
+            <option value="desc">Z → A (Descending)</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Type</label>
+          <select id="sortType">
+            <option value="auto">Auto Detect</option>
+            <option value="text">Text</option>
+            <option value="number">Number</option>
+            <option value="date">Date</option>
+          </select>
+        </div>
+        <button class="btn btn-green" onclick="doSort()">🔤 Sort Now</button>
+      </div>
+      <div id="sortResult"></div>
+    </div></div>
+
+    <div class="op-card"><div class="op-card-header">📚 How Sorting Works in Excel</div><div class="op-card-body">
+      <div class="info-box info-green">
+        <b>Data → Sort & Filter → Sort</b><br><br>
+        • <b>Single Column Sort:</b> Click the column header → Sort A to Z or Z to A<br>
+        • <b>Multi-level Sort:</b> Data → Sort → Add Level → Sort by multiple columns<br>
+        • <b>Custom Sort:</b> You can define custom sort orders (Jan, Feb, Mar...)<br>
+        • <b>Sort by Color:</b> Sort cells by font color or fill color<br>
+        • <b>Keyboard:</b> Select column → Alt+D+S (Windows)
+      </div>
+    </div></div>`);
+}
+
+function doSort() {
+  if (!currentData.length) { showToast('No data loaded', 'error'); return; }
+  const col = document.getElementById('sortCol').value;
+  const order = document.getElementById('sortOrder').value;
+  const type = document.getElementById('sortType').value;
+
+  const sorted = [...currentData].sort((a, b) => {
+    let va = a[col], vb = b[col];
+    if (type === 'number' || (type === 'auto' && !isNaN(parseFloat(va)) && !isNaN(parseFloat(vb)))) {
+      va = parseFloat(va) || 0; vb = parseFloat(vb) || 0;
+    } else if (type === 'date') {
+      va = new Date(va); vb = new Date(vb);
+    } else {
+      va = String(va).toLowerCase(); vb = String(vb).toLowerCase();
+    }
+    return order === 'asc' ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
+  });
+
+  currentData = sorted;
+  document.getElementById('sortResult').innerHTML = `
+    <div class="info-box info-green">✅ Sorted <b>${currentData.length} rows</b> by <b>${col}</b> — ${order === 'asc' ? 'Ascending ↑' : 'Descending ↓'}</div>
+    <div style="margin-top:10px">${buildTableHTML(currentHeaders, sorted, 50)}</div>`;
+  showToast('Sorted by ' + col, 'success');
+}
+
+// ─── FILTER ───
+function renderFilter(panel) {
+  panel.innerHTML = `<div class="op-header"><span class="oh-icon">🔽</span><div><div class="oh-title">Filter Data</div><div class="oh-desc">Filter rows based on conditions — equals, contains, greater than, etc.</div></div></div>`;
+
+  if (!workbook) { panel.insertAdjacentHTML('beforeend', noFileMsg()); return; }
+
+  const colOpts = currentHeaders.map(h=>`<option>${h}</option>`).join('');
+  panel.insertAdjacentHTML('beforeend', `
+    <div class="op-card"><div class="op-card-header">⚙️ Filter Configuration</div><div class="op-card-body">
+      <div class="form-row">
+        <div class="form-group"><label>Column</label><select id="filterCol">${colOpts}</select></div>
+        <div class="form-group"><label>Condition</label>
+          <select id="filterCond">
+            <option value="equals">Equals</option>
+            <option value="not_equals">Not Equals</option>
+            <option value="contains">Contains</option>
+            <option value="not_contains">Does Not Contain</option>
+            <option value="starts_with">Starts With</option>
+            <option value="ends_with">Ends With</option>
+            <option value="gt">Greater Than</option>
+            <option value="gte">Greater Than or Equal</option>
+            <option value="lt">Less Than</option>
+            <option value="lte">Less Than or Equal</option>
+            <option value="empty">Is Empty</option>
+            <option value="not_empty">Is Not Empty</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Value</label><input type="text" id="filterVal" placeholder="Enter value..."></div>
+        <button class="btn btn-green" onclick="doFilter()">🔽 Apply Filter</button>
+        <button class="btn btn-outline" onclick="clearFilter()">✖ Clear</button>
+      </div>
+      <div id="filterResult"></div>
+    </div></div>
+
+    <div class="op-card"><div class="op-card-header">📚 AutoFilter & Advanced Filter in Excel</div><div class="op-card-body">
+      <div class="info-box info-blue">
+        <b>AutoFilter:</b> Select any cell in data → Data → Filter (Ctrl+Shift+L)<br>
+        • Click dropdown arrows to filter by column values<br>
+        • Filter by color, number ranges, text conditions<br><br>
+        <b>Advanced Filter:</b> Data → Advanced → Can filter to another location<br>
+        <b>FILTER Function (Excel 365):</b> =FILTER(A:C, B:B="Sales") — dynamic filtering
+      </div>
+    </div></div>`);
+}
+
+function doFilter() {
+  const col = document.getElementById('filterCol').value;
+  const cond = document.getElementById('filterCond').value;
+  const val = document.getElementById('filterVal').value.toLowerCase();
+
+  const filtered = currentData.filter(row => {
+    const cv = String(row[col] ?? '').toLowerCase();
+    const cn = parseFloat(row[col]);
+    const vn = parseFloat(val);
+    switch(cond) {
+      case 'equals': return cv === val;
+      case 'not_equals': return cv !== val;
+      case 'contains': return cv.includes(val);
+      case 'not_contains': return !cv.includes(val);
+      case 'starts_with': return cv.startsWith(val);
+      case 'ends_with': return cv.endsWith(val);
+      case 'gt': return cn > vn;
+      case 'gte': return cn >= vn;
+      case 'lt': return cn < vn;
+      case 'lte': return cn <= vn;
+      case 'empty': return cv === '';
+      case 'not_empty': return cv !== '';
+      default: return true;
+    }
+  });
+
+  document.getElementById('filterResult').innerHTML = `
+    <div class="info-box info-green">✅ Found <b>${filtered.length}</b> matching rows out of ${currentData.length}</div>
+    <div style="margin-top:10px">${buildTableHTML(currentHeaders, filtered, 100)}</div>`;
+  showToast(`Filter: ${filtered.length} rows found`, 'success');
+}
+function clearFilter() {
+  loadSheet(currentSheetName);
+  document.getElementById('filterResult').innerHTML = '';
+  showToast('Filter cleared', 'success');
+}
+
+// ─── FIND & REPLACE ───
+function renderFindReplace(panel) {
+  panel.innerHTML = `<div class="op-header"><span class="oh-icon">🔍</span><div><div class="oh-title">Find & Replace</div><div class="oh-desc">Search for values and optionally replace them — like Ctrl+H in Excel</div></div></div>`;
+
+  if (!workbook) { panel.insertAdjacentHTML('beforeend', noFileMsg()); return; }
+
+  panel.insertAdjacentHTML('beforeend', `
+    <div class="op-card"><div class="op-card-header">🔍 Find & Replace Tool</div><div class="op-card-body">
+      <div class="form-row">
+        <div class="form-group"><label>Find</label><input type="text" id="findVal" placeholder="Search text..."></div>
+        <div class="form-group"><label>Replace With</label><input type="text" id="replaceVal" placeholder="Replacement..."></div>
+        <div class="form-group"><label>Column (optional)</label>
+          <select id="findCol"><option value="">All Columns</option>${currentHeaders.map(h=>`<option>${h}</option>`).join('')}</select>
+        </div>
+      </div>
+      <div class="form-row">
+        <label style="font-size:12px; display:flex; align-items:center; gap:6px; cursor:pointer">
+          <input type="checkbox" id="caseSensitive"> Case Sensitive
+        </label>
+        <label style="font-size:12px; display:flex; align-items:center; gap:6px; cursor:pointer">
+          <input type="checkbox" id="wholeWord"> Whole Word Only
+        </label>
+      </div>
+      <div class="form-row">
+        <button class="btn btn-green" onclick="doFind()">🔍 Find All</button>
+        <button class="btn btn-blue" onclick="doReplace()">🔄 Replace All</button>
+      </div>
+      <div id="findResult"></div>
+    </div></div>
+
+    <div class="op-card"><div class="op-card-header">📚 Excel Find & Replace Tips</div><div class="op-card-body">
+      <div class="shortcut-grid">
+        <div class="shortcut-item"><span class="kbd">Ctrl+F</span> Open Find</div>
+        <div class="shortcut-item"><span class="kbd">Ctrl+H</span> Find & Replace</div>
+        <div class="shortcut-item"><span class="kbd">F3</span> Find Next</div>
+        <div class="shortcut-item"><span class="kbd">Shift+F4</span> Find Previous</div>
+      </div>
+      <div class="info-box info-green" style="margin-top:10px">
+        💡 <b>Wildcards:</b> Use <code>*</code> for any text, <code>?</code> for single char<br>
+        Example: <code>Jo*</code> finds "John", "Joseph", "Joe"
+      </div>
+    </div></div>`);
+}
+
+function doFind() {
+  const find = document.getElementById('findVal').value;
+  if (!find) return;
+  const cs = document.getElementById('caseSensitive').checked;
+  const ww = document.getElementById('wholeWord').checked;
+  const col = document.getElementById('findCol').value;
+  const cols = col ? [col] : currentHeaders;
+
+  const matches = [];
+  currentData.forEach((row, ri) => {
+    cols.forEach(h => {
+      let v = String(row[h] ?? '');
+      let f = find;
+      if (!cs) { v = v.toLowerCase(); f = f.toLowerCase(); }
+      const found = ww ? v === f : v.includes(f);
+      if (found) matches.push({ row: ri+1, col: h, value: row[h] });
+    });
+  });
+
+  document.getElementById('findResult').innerHTML = `
+    <div class="info-box info-green" style="margin-bottom:8px">🔍 Found <b>${matches.length}</b> match(es) for "<b>${escHtml(find)}</b>"</div>
+    ${matches.length ? `<div class="result-table-wrap"><table class="result-table"><thead><tr><th>Row</th><th>Column</th><th>Value</th></tr></thead><tbody>${matches.slice(0,50).map(m=>`<tr><td>${m.row}</td><td>${escHtml(m.col)}</td><td>${escHtml(String(m.value))}</td></tr>`).join('')}</tbody></table></div>` : ''}`;
+}
+
+function doReplace() {
+  const find = document.getElementById('findVal').value;
+  const replace = document.getElementById('replaceVal').value;
+  if (!find) return;
+  const cs = document.getElementById('caseSensitive').checked;
+  const col = document.getElementById('findCol').value;
+  const cols = col ? [col] : currentHeaders;
+  let count = 0;
+
+  currentData = currentData.map(row => {
+    const newRow = {...row};
+    cols.forEach(h => {
+      let v = String(newRow[h] ?? '');
+      const f = find;
+      const match = cs ? v.includes(f) : v.toLowerCase().includes(f.toLowerCase());
+      if (match) {
+        if (cs) { newRow[h] = v.split(f).join(replace); }
+        else {
+          const re = new RegExp(f.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'gi');
+          newRow[h] = v.replace(re, replace);
+        }
+        count++;
+      }
+    });
+    return newRow;
+  });
+
+  document.getElementById('findResult').innerHTML = `<div class="info-box info-green">✅ Replaced <b>${count}</b> occurrence(s) of "<b>${escHtml(find)}</b>" with "<b>${escHtml(replace)}</b>"</div>`;
+  showToast(`Replaced ${count} values`, 'success');
+}
+
+// ─── FORMULAS GUIDE ───
+function renderFormulas(panel) {
+  panel.innerHTML = `<div class="op-header"><span class="oh-icon">ƒx</span><div><div class="oh-title">Excel Formulas & Functions</div><div class="oh-desc">Complete reference for all Excel formulas with examples and syntax</div></div></div>`;
+
+  const cats = [
+    { name: '📐 Math & Trig', color: '#217346', fns: [
+      ['=SUM(A1:A10)','Sum a range of numbers'],
+      ['=SUMIF(A:A,"Sales",B:B)','Sum if condition met'],
+      ['=SUMIFS(C:C,A:A,"X",B:B,">5")','Sum with multiple conditions'],
+      ['=PRODUCT(A1:A5)','Multiply all values'],
+      ['=ROUND(A1,2)','Round to 2 decimal places'],
+      ['=ROUNDUP(A1,0)','Always round up'],
+      ['=ROUNDDOWN(A1,0)','Always round down'],
+      ['=ABS(A1)','Absolute (positive) value'],
+      ['=MOD(A1,3)','Remainder after division'],
+      ['=POWER(A1,2)','A1 squared'],
+      ['=SQRT(A1)','Square root'],
+      ['=INT(A1)','Integer part only'],
+      ['=CEILING(A1,5)','Round up to nearest 5'],
+      ['=FLOOR(A1,5)','Round down to nearest 5'],
+    ]},
+    { name: '📝 Text Functions', color: '#0078d4', fns: [
+      ['=LEN(A1)','Length of text'],
+      ['=UPPER(A1)','Convert to UPPERCASE'],
+      ['=LOWER(A1)','Convert to lowercase'],
+      ['=PROPER(A1)','Capitalize Each Word'],
+      ['=TRIM(A1)','Remove extra spaces'],
+      ['=LEFT(A1,3)','First 3 characters'],
+      ['=RIGHT(A1,4)','Last 4 characters'],
+      ['=MID(A1,2,5)','5 chars starting at pos 2'],
+      ['=FIND("@",A1)','Position of @ in text'],
+      ['=SUBSTITUTE(A1,"old","new")','Replace text inside string'],
+      ['=CONCAT(A1," ",B1)','Join multiple cells'],
+      ['=TEXT(A1,"DD/MM/YYYY")','Format number as text'],
+      ['=VALUE(A1)','Convert text to number'],
+      ['=REPT("★",A1)','Repeat text n times'],
+    ]},
+    { name: '📅 Date & Time', color: '#ff8c00', fns: [
+      ['=TODAY()','Current date'],
+      ['=NOW()','Current date & time'],
+      ['=DATE(2026,5,11)','Create a date'],
+      ['=YEAR(A1)','Extract year from date'],
+      ['=MONTH(A1)','Extract month (1-12)'],
+      ['=DAY(A1)','Extract day of month'],
+      ['=WEEKDAY(A1)','Day of week (1=Sun)'],
+      ['=DATEDIF(A1,B1,"D")','Days between dates'],
+      ['=NETWORKDAYS(A1,B1)','Working days between dates'],
+      ['=EDATE(A1,3)','Date 3 months from A1'],
+      ['=EOMONTH(A1,0)','Last day of same month'],
+      ['=HOUR(A1)','Extract hour'],
+      ['=MINUTE(A1)','Extract minute'],
+    ]},
+    { name: '🔗 Lookup & Reference', color: '#d13438', fns: [
+      ['=VLOOKUP(A1,B:D,2,0)','Vertical lookup (exact match)'],
+      ['=HLOOKUP(A1,A:Z,3,0)','Horizontal lookup'],
+      ['=INDEX(A:A,5)','Get value at row 5'],
+      ['=MATCH(A1,B:B,0)','Find row position of A1'],
+      ['=INDEX(C:C,MATCH(A1,B:B,0))','INDEX+MATCH (better than VLOOKUP)'],
+      ['=XLOOKUP(A1,B:B,C:C)','Modern XLOOKUP (Excel 365)'],
+      ['=OFFSET(A1,2,1)','Move 2 rows down, 1 col right'],
+      ['=INDIRECT("A"&B1)','Reference from text string'],
+      ['=CHOOSE(2,"A","B","C")','Pick from list by index'],
+      ['=ROW(A1)','Row number of cell'],
+      ['=COLUMN(A1)','Column number of cell'],
+    ]},
+    { name: '❓ Logical Functions', color: '#737373', fns: [
+      ['=IF(A1>10,"Yes","No")','Basic IF condition'],
+      ['=IF(A1>10,IF(B1>5,"Both","Only A"),"No")','Nested IF'],
+      ['=IFS(A1>90,"A",A1>80,"B",A1>70,"C")','Multiple conditions'],
+      ['=AND(A1>0,B1<100)','Both conditions must be TRUE'],
+      ['=OR(A1="Yes",B1="Yes")','Either condition TRUE'],
+      ['=NOT(A1="No")','Reverse true/false'],
+      ['=IFERROR(A1/B1,"Error!")','Catch division errors'],
+      ['=IFNA(VLOOKUP(A1,B:C,2,0),"Not Found")','Catch #N/A errors'],
+      ['=SWITCH(A1,1,"Jan",2,"Feb",3,"Mar")','Switch-case style'],
+      ['=ISBLANK(A1)','Check if cell is empty'],
+      ['=ISNUMBER(A1)','Check if value is number'],
+    ]},
+  ];
+
+  cats.forEach(cat => {
+    const div = document.createElement('div');
+    div.className = 'op-card';
+    div.innerHTML = `<div class="op-card-header" style="background:${cat.color}">${cat.name}</div>
+    <div class="op-card-body"><div class="func-grid">
+      ${cat.fns.map(([f,d])=>`<div class="func-item"><div class="fi-func">${escHtml(f)}</div><div class="fi-desc">${d}</div></div>`).join('')}
+    </div></div>`;
+    panel.appendChild(div);
+  });
+}
+
+// ─── CHART ───
+function renderChart(panel) {
+  panel.innerHTML = `<div class="op-header"><span class="oh-icon">📊</span><div><div class="oh-title">Charts & Visualization</div><div class="oh-desc">Create Bar, Line, Pie, Scatter, Area and more charts from your data</div></div></div>`;
+
+  if (!workbook) { panel.insertAdjacentHTML('beforeend', noFileMsg()); renderChartGuide(panel); return; }
+
+  const colOpts = currentHeaders.map(h=>`<option>${h}</option>`).join('');
+  const numCols = currentHeaders.filter(h => currentData.some(r => !isNaN(parseFloat(r[h])) && r[h]!==''));
+
+  panel.insertAdjacentHTML('beforeend', `
+    <div class="op-card"><div class="op-card-header">⚙️ Chart Configuration</div><div class="op-card-body">
+      <div class="form-row">
+        <div class="form-group"><label>Label Column (X)</label><select id="chartLabel">${colOpts}</select></div>
+        <div class="form-group"><label>Value Column (Y)</label>
+          <select id="chartVal">${numCols.map(h=>`<option>${h}</option>`).join('') || colOpts}</select>
+        </div>
+        <div class="form-group"><label>Chart Type</label>
+          <select id="chartType">
+            <option value="bar">📊 Bar Chart</option>
+            <option value="line">📈 Line Chart</option>
+            <option value="pie">🥧 Pie Chart</option>
+            <option value="doughnut">🍩 Doughnut</option>
+            <option value="radar">🕸️ Radar</option>
+            <option value="polarArea">🎯 Polar Area</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Max Items</label>
+          <select id="chartMax">
+            <option value="10">10</option><option value="20">20</option>
+            <option value="50">50</option><option value="100">100</option>
+          </select>
+        </div>
+        <button class="btn btn-green" onclick="doChart()">📊 Create Chart</button>
+      </div>
+    </div></div>
+    <div class="op-card"><div class="op-card-header">📊 Chart Preview</div><div class="op-card-body">
+      <div class="chart-wrap"><canvas id="myChart"></canvas></div>
+    </div></div>`);
+
+  renderChartGuide(panel);
+  if (numCols.length) { document.getElementById('chartVal').value = numCols[0]; doChart(); }
+}
+
+function doChart() {
+  const labelCol = document.getElementById('chartLabel').value;
+  const valCol = document.getElementById('chartVal').value;
+  const type = document.getElementById('chartType').value;
+  const maxN = parseInt(document.getElementById('chartMax').value);
+
+  const slice = currentData.slice(0, maxN);
+  const labels = slice.map(r => String(r[labelCol] ?? ''));
+  const values = slice.map(r => parseFloat(r[valCol]) || 0);
+
+  const colors = labels.map((_, i) => `hsl(${(i * 137.5) % 360}, 60%, 55%)`);
+
+  if (chartInstance) chartInstance.destroy();
+  const ctx = document.getElementById('myChart').getContext('2d');
+  chartInstance = new Chart(ctx, {
+    type: type,
+    data: {
+      labels: labels,
+      datasets: [{
+        label: valCol,
+        data: values,
+        backgroundColor: colors,
+        borderColor: colors.map(c => c.replace('55%', '40%')),
+        borderWidth: 1,
+        tension: 0.3,
+        fill: type === 'line' ? false : undefined,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top' }, title: { display: true, text: `${valCol} by ${labelCol}` } },
+      scales: ['bar','line'].includes(type) ? { y: { beginAtZero: true } } : {}
+    }
+  });
+  showToast('Chart created!', 'success');
+}
+
+function renderChartGuide(panel) {
+  panel.insertAdjacentHTML('beforeend', `
+    <div class="op-card"><div class="op-card-header">📚 Chart Types in Excel</div><div class="op-card-body">
+      <div class="func-grid">
+        <div class="func-item"><div class="fi-func">📊 Bar / Column</div><div class="fi-desc">Compare values across categories. Best for side-by-side comparison</div></div>
+        <div class="func-item"><div class="fi-func">📈 Line Chart</div><div class="fi-desc">Show trends over time or continuous data. Great for time series</div></div>
+        <div class="func-item"><div class="fi-func">🥧 Pie Chart</div><div class="fi-desc">Show parts of a whole. Use only when you have 5-6 slices max</div></div>
+        <div class="func-item"><div class="fi-func">📉 Area Chart</div><div class="fi-desc">Like line chart but filled. Shows volume over time</div></div>
+        <div class="func-item"><div class="fi-func">🔵 Scatter Plot</div><div class="fi-desc">Show correlation between two numeric variables</div></div>
+        <div class="func-item"><div class="fi-func">📦 Box Plot</div><div class="fi-desc">Statistical distribution: median, quartiles, outliers</div></div>
+      </div>
+      <div class="info-box info-blue" style="margin-top:10px">
+        <b>How to insert in Excel:</b><br>
+        1. Select your data range<br>
+        2. Insert → Charts → Choose chart type<br>
+        3. Click the chart to customize using "Chart Design" ribbon tab<br>
+        4. Right-click → Format Chart Area for advanced styling
+      </div>
+    </div></div>`);
+}
+
+// ─── PIVOT ───
+function renderPivot(panel) {
+  panel.innerHTML = `<div class="op-header"><span class="oh-icon">📋</span><div><div class="oh-title">Pivot Table</div><div class="oh-desc">Group and summarize data by categories — the most powerful Excel feature</div></div></div>`;
+
+  if (!workbook) { panel.insertAdjacentHTML('beforeend', noFileMsg()); renderPivotGuide(panel); return; }
+
+  const colOpts = currentHeaders.map(h=>`<option>${h}</option>`).join('');
+  const numCols = currentHeaders.filter(h => currentData.some(r => !isNaN(parseFloat(r[h])) && r[h]!==''));
+  const numOpts = numCols.length ? numCols.map(h=>`<option>${h}</option>`).join('') : colOpts;
+
+  panel.insertAdjacentHTML('beforeend', `
+    <div class="op-card"><div class="op-card-header">⚙️ Pivot Configuration</div><div class="op-card-body">
+      <div class="form-row">
+        <div class="form-group"><label>Row Field (Group By)</label><select id="pivotRow">${colOpts}</select></div>
+        <div class="form-group"><label>Value Field</label><select id="pivotVal">${numOpts}</select></div>
+        <div class="form-group"><label>Aggregation</label>
+          <select id="pivotAgg">
+            <option value="sum">SUM</option>
+            <option value="avg">AVERAGE</option>
+            <option value="count">COUNT</option>
+            <option value="min">MIN</option>
+            <option value="max">MAX</option>
+          </select>
+        </div>
+        <button class="btn btn-green" onclick="doPivot()">📋 Build Pivot</button>
+      </div>
+      <div id="pivotResult"></div>
+    </div></div>`);
+
+  renderPivotGuide(panel);
+}
+
+function doPivot() {
+  const rowF = document.getElementById('pivotRow').value;
+  const valF = document.getElementById('pivotVal').value;
+  const agg = document.getElementById('pivotAgg').value;
+  const groups = {};
+
+  currentData.forEach(row => {
+    const key = String(row[rowF] ?? '(blank)');
+    if (!groups[key]) groups[key] = [];
+    const v = parseFloat(row[valF]);
+    if (!isNaN(v)) groups[key].push(v);
+  });
+
+  const rows = Object.entries(groups).map(([k, vals]) => {
+    let result;
+    if (!vals.length) return null;
+    switch(agg) {
+      case 'sum': result = vals.reduce((a,b)=>a+b,0); break;
+      case 'avg': result = vals.reduce((a,b)=>a+b,0)/vals.length; break;
+      case 'count': result = vals.length; break;
+      case 'min': result = Math.min(...vals); break;
+      case 'max': result = Math.max(...vals); break;
+    }
+    return { [rowF]: k, [`${agg.toUpperCase()} of ${valF}`]: fmt(result), 'Count': vals.length };
+  }).filter(Boolean);
+
+  rows.sort((a,b) => parseFloat(Object.values(b)[1]) - parseFloat(Object.values(a)[1]));
+
+  document.getElementById('pivotResult').innerHTML = `
+    <div class="info-box info-green" style="margin-bottom:8px">📋 Pivot: <b>${rows.length} groups</b> | ${agg.toUpperCase()} of <b>${valF}</b> by <b>${rowF}</b></div>
+    ${buildTableHTML(Object.keys(rows[0]||{}), rows, 100)}`;
+  showToast('Pivot table built!', 'success');
+}
+
+function renderPivotGuide(panel) {
+  panel.insertAdjacentHTML('beforeend', `
+    <div class="op-card"><div class="op-card-header">📚 PivotTable in Excel — How To</div><div class="op-card-body">
+      <div class="info-box info-green">
+        <b>Step-by-Step:</b><br>
+        1. Click anywhere inside your data<br>
+        2. Insert → PivotTable → New Worksheet<br>
+        3. Drag fields into Rows, Columns, Values, Filters areas<br>
+        4. Right-click any value → Summarize Values By → SUM/COUNT/AVG<br><br>
+        <b>PivotTable Features:</b><br>
+        • Grouping dates by month/quarter/year<br>
+        • Calculated fields (custom formulas inside pivot)<br>
+        • Slicers for visual filtering<br>
+        • PivotCharts based on pivot data<br>
+        • Refresh when source data changes (right-click → Refresh)
+      </div>
+    </div></div>`);
+}
+
+// ─── VLOOKUP ───
+function renderVlookup(panel) {
+  panel.innerHTML = `<div class="op-header"><span class="oh-icon">🔗</span><div><div class="oh-title">VLOOKUP / XLOOKUP</div><div class="oh-desc">Look up a value and return corresponding data from another column</div></div></div>`;
+
+  if (!workbook) { panel.insertAdjacentHTML('beforeend', noFileMsg()); renderVlookupGuide(panel); return; }
+
+  const colOpts = currentHeaders.map(h=>`<option>${h}</option>`).join('');
+  panel.insertAdjacentHTML('beforeend', `
+    <div class="op-card"><div class="op-card-header">⚙️ Lookup Configuration</div><div class="op-card-body">
+      <div class="form-row">
+        <div class="form-group"><label>Look In Column</label><select id="vlookupKey">${colOpts}</select></div>
+        <div class="form-group"><label>Search Value</label><input type="text" id="vlookupSearch" placeholder="Value to find..."></div>
+        <div class="form-group"><label>Return Column</label><select id="vlookupReturn">${colOpts}</select></div>
+        <div class="form-group"><label>Match Type</label>
+          <select id="vlookupMatch">
+            <option value="exact">Exact Match</option>
+            <option value="partial">Partial Match</option>
+          </select>
+        </div>
+        <button class="btn btn-green" onclick="doVlookup()">🔗 Lookup</button>
+      </div>
+      <div id="vlookupResult"></div>
+    </div></div>`);
+
+  renderVlookupGuide(panel);
+}
+
+function doVlookup() {
+  const key = document.getElementById('vlookupKey').value;
+  const search = document.getElementById('vlookupSearch').value.toLowerCase();
+  const ret = document.getElementById('vlookupReturn').value;
+  const mt = document.getElementById('vlookupMatch').value;
+
+  const matches = currentData.filter(row => {
+    const v = String(row[key] ?? '').toLowerCase();
+    return mt === 'exact' ? v === search : v.includes(search);
+  });
+
+  if (!matches.length) {
+    document.getElementById('vlookupResult').innerHTML = `<div class="info-box info-orange">❌ No match found for "<b>${escHtml(search)}</b>" in column <b>${key}</b></div>`;
+    return;
+  }
+
+  const first = matches[0][ret];
+  document.getElementById('vlookupResult').innerHTML = `
+    <div class="info-box info-green">
+      ✅ <b>${matches.length}</b> match(es) found.<br>
+      First result — <b>${key}</b>: "${escHtml(String(matches[0][key]))}" → <b>${ret}</b>: <span style="font-size:16px; color:var(--excel-green-dark)"><b>${escHtml(String(first))}</b></span><br>
+      <small>Excel formula: =VLOOKUP("${escHtml(search)}",A:Z,${currentHeaders.indexOf(ret)+1},0)</small>
+    </div>
+    ${matches.length > 1 ? buildTableHTML([key,ret], matches.map(r=>({[key]:r[key],[ret]:r[ret]})), 20) : ''}`;
+}
+
+function renderVlookupGuide(panel) {
+  panel.insertAdjacentHTML('beforeend', `
+    <div class="op-card"><div class="op-card-header">📚 VLOOKUP vs XLOOKUP vs INDEX-MATCH</div><div class="op-card-body">
+      <div class="func-grid">
+        <div class="func-item"><div class="fi-func">=VLOOKUP(A1,B:D,2,0)</div><div class="fi-desc">Looks up A1 in col B, returns col 2 (C). Last arg 0=exact, 1=approximate</div></div>
+        <div class="func-item"><div class="fi-func">=HLOOKUP(A1,1:3,2,0)</div><div class="fi-desc">Same as VLOOKUP but horizontal — looks across rows</div></div>
+        <div class="func-item"><div class="fi-func">=XLOOKUP(A1,B:B,C:C)</div><div class="fi-desc">Modern replacement. No column number needed. Works left to right</div></div>
+        <div class="func-item"><div class="fi-func">=INDEX(C:C,MATCH(A1,B:B,0))</div><div class="fi-desc">Most flexible. Look up in any direction. No column counting needed</div></div>
+      </div>
+      <div class="info-box info-blue" style="margin-top:10px">
+        💡 <b>When to use what:</b><br>
+        • <b>VLOOKUP:</b> Simple lookups, Excel 2010+<br>
+        • <b>INDEX+MATCH:</b> When lookup column isn't first, or looking left<br>
+        • <b>XLOOKUP:</b> Excel 365 only, but most powerful and flexible
+      </div>
+    </div></div>`);
+}
+
+// ─── IF FORMULA ───
+function renderIfFormula(panel) {
+  panel.innerHTML = `<div class="op-header"><span class="oh-icon">❓</span><div><div class="oh-title">IF Formula & Logic</div><div class="oh-desc">Apply conditional logic to your data — mark rows based on conditions</div></div></div>`;
+
+  if (!workbook) { panel.insertAdjacentHTML('beforeend', noFileMsg()); renderIfGuide(panel); return; }
+
+  const colOpts = currentHeaders.map(h=>`<option>${h}</option>`).join('');
+  panel.insertAdjacentHTML('beforeend', `
+    <div class="op-card"><div class="op-card-header">⚙️ IF Logic Tester</div><div class="op-card-body">
+      <div class="form-row">
+        <div class="form-group"><label>Column</label><select id="ifCol">${colOpts}</select></div>
+        <div class="form-group"><label>Condition</label>
+          <select id="ifCond">
+            <option value="gt">Greater Than (&gt;)</option>
+            <option value="lt">Less Than (&lt;)</option>
+            <option value="gte">Greater or Equal (&gt;=)</option>
+            <option value="lte">Less or Equal (&lt;=)</option>
+            <option value="eq">Equals (=)</option>
+            <option value="neq">Not Equals (≠)</option>
+            <option value="contains">Text Contains</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Value</label><input type="text" id="ifVal" placeholder="e.g. 100"></div>
+        <div class="form-group"><label>If TRUE label</label><input type="text" id="ifTrue" value="YES" style="width:80px"></div>
+        <div class="form-group"><label>If FALSE label</label><input type="text" id="ifFalse" value="NO" style="width:80px"></div>
+        <button class="btn btn-green" onclick="doIf()">❓ Apply IF</button>
+      </div>
+      <div id="ifResult"></div>
+    </div></div>`);
+
+  renderIfGuide(panel);
+}
+
+function doIf() {
+  const col = document.getElementById('ifCol').value;
+  const cond = document.getElementById('ifCond').value;
+  const val = document.getElementById('ifVal').value;
+  const trueLabel = document.getElementById('ifTrue').value || 'TRUE';
+  const falseLabel = document.getElementById('ifFalse').value || 'FALSE';
+  const numVal = parseFloat(val);
+
+  const results = currentData.map(row => {
+    const cv = row[col];
+    const cn = parseFloat(cv);
+    let test;
+    switch(cond) {
+      case 'gt': test = cn > numVal; break;
+      case 'lt': test = cn < numVal; break;
+      case 'gte': test = cn >= numVal; break;
+      case 'lte': test = cn <= numVal; break;
+      case 'eq': test = String(cv) === val; break;
+      case 'neq': test = String(cv) !== val; break;
+      case 'contains': test = String(cv).toLowerCase().includes(val.toLowerCase()); break;
+    }
+    return {...row, '✅ IF Result': test ? trueLabel : falseLabel };
+  });
+
+  const trueCount = results.filter(r => r['✅ IF Result'] === trueLabel).length;
+  const formula = `=IF(${col}${cond==='gt'?'>':cond==='lt'?'<':cond==='gte'?'>=':cond==='lte'?'<=':cond==='eq'?'=':'<>'}${isNaN(numVal)?'"'+val+'"':val},"${trueLabel}","${falseLabel}")`;
+
+  document.getElementById('ifResult').innerHTML = `
+    <div class="info-box info-green" style="margin-bottom:8px">
+      ✅ <b>${trueCount} rows = ${trueLabel}</b>, <b>${currentData.length - trueCount} rows = ${falseLabel}</b><br>
+      Excel formula: <code>${escHtml(formula)}</code>
+    </div>
+    ${buildTableHTML([...currentHeaders, '✅ IF Result'], results, 50)}`;
+}
+
+function renderIfGuide(panel) {
+  panel.insertAdjacentHTML('beforeend', `
+    <div class="op-card"><div class="op-card-header">📚 IF & Logical Functions</div><div class="op-card-body">
+      <div class="func-grid">
+        <div class="func-item"><div class="fi-func">=IF(A1>100,"High","Low")</div><div class="fi-desc">Basic if-else: returns "High" if A1&gt;100, else "Low"</div></div>
+        <div class="func-item"><div class="fi-func">=IF(A1>90,"A",IF(A1>80,"B","C"))</div><div class="fi-desc">Nested IF — grade system</div></div>
+        <div class="func-item"><div class="fi-func">=IFS(A1>90,"A",A1>80,"B",A1>70,"C",TRUE,"F")</div><div class="fi-desc">IFS — cleaner multiple conditions (Excel 2019+)</div></div>
+        <div class="func-item"><div class="fi-func">=IF(AND(A1>0,B1>0),"Both Positive","")</div><div class="fi-desc">IF with AND — both conditions must be true</div></div>
+        <div class="func-item"><div class="fi-func">=IF(OR(A1="Yes",B1="Yes"),"Approved","")</div><div class="fi-desc">IF with OR — either condition triggers</div></div>
+        <div class="func-item"><div class="fi-func">=IFERROR(A1/B1,0)</div><div class="fi-desc">Return 0 if formula produces an error</div></div>
+      </div>
+    </div></div>`);
+}
+
+// ─── DUPLICATES ───
+function renderDuplicates(panel) {
+  panel.innerHTML = `<div class="op-header"><span class="oh-icon">🔁</span><div><div class="oh-title">Remove Duplicates</div><div class="oh-desc">Find duplicate rows and optionally remove them from your data</div></div></div>`;
+
+  if (!workbook) { panel.insertAdjacentHTML('beforeend', noFileMsg()); return; }
+
+  const colOpts = currentHeaders.map(h=>`<option value="${h}">${h}</option>`).join('');
+  panel.insertAdjacentHTML('beforeend', `
+    <div class="op-card"><div class="op-card-header">⚙️ Duplicate Detection</div><div class="op-card-body">
+      <div class="form-row">
+        <div class="form-group"><label>Check Column(s)</label>
+          <select id="dupCols" multiple style="height:80px; min-width:180px">
+            ${currentHeaders.map(h=>`<option value="${h}" selected>${h}</option>`).join('')}
+          </select>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px; justify-content:flex-end">
+          <button class="btn btn-green" onclick="findDuplicates()">🔍 Find Duplicates</button>
+          <button class="btn btn-danger" onclick="removeDuplicates()">🗑️ Remove Duplicates</button>
+        </div>
+      </div>
+      <div class="info-box info-orange" style="margin-top:8px">💡 Hold Ctrl to select multiple columns for combined duplicate check</div>
+      <div id="dupResult"></div>
+    </div></div>
+
+    <div class="op-card"><div class="op-card-header">📚 Remove Duplicates in Excel</div><div class="op-card-body">
+      <div class="info-box info-green">
+        <b>In Excel:</b> Data → Remove Duplicates → Select columns → OK<br><br>
+        <b>Find duplicates with formula:</b><br>
+        =COUNTIF($A$1:A1,A1)&gt;1 — returns TRUE for duplicate rows<br><br>
+        <b>Highlight duplicates:</b><br>
+        Home → Conditional Formatting → Highlight Cell Rules → Duplicate Values
+      </div>
+    </div></div>`);
+}
+
+function getDupCols() {
+  return Array.from(document.getElementById('dupCols').selectedOptions).map(o => o.value);
+}
+
+function findDuplicates() {
+  const cols = getDupCols();
+  const keys = {};
+  const dupes = [];
+  currentData.forEach((row, i) => {
+    const key = cols.map(c => String(row[c] ?? '')).join('||');
+    if (keys[key] !== undefined) dupes.push({ rowNum: i+2, ...row, _dupOf: keys[key]+2 });
+    else keys[key] = i;
+  });
+
+  document.getElementById('dupResult').innerHTML = `
+    <div class="info-box info-${dupes.length ? 'orange' : 'green'}" style="margin-top:10px">
+      ${dupes.length ? `⚠️ Found <b>${dupes.length}</b> duplicate row(s)` : '✅ No duplicates found!'}
+    </div>
+    ${dupes.length ? buildTableHTML(['rowNum', ...currentHeaders], dupes, 50) : ''}`;
+}
+
+function removeDuplicates() {
+  const cols = getDupCols();
+  const keys = new Set();
+  const original = currentData.length;
+  currentData = currentData.filter(row => {
+    const key = cols.map(c => String(row[c] ?? '')).join('||');
+    if (keys.has(key)) return false;
+    keys.add(key); return true;
+  });
+  const removed = original - currentData.length;
+  document.getElementById('dupResult').innerHTML = `
+    <div class="info-box info-green" style="margin-top:10px">✅ Removed <b>${removed}</b> duplicate rows. <b>${currentData.length}</b> unique rows remain.</div>
+    ${buildTableHTML(currentHeaders, currentData, 50)}`;
+  document.getElementById('statusRows').textContent = 'Rows: ' + currentData.length;
+  showToast(`Removed ${removed} duplicates`, 'success');
+}
+
+// ─── CLEAN DATA ───
+function renderClean(panel) {
+  panel.innerHTML = `<div class="op-header"><span class="oh-icon">🧹</span><div><div class="oh-title">Clean Data</div><div class="oh-desc">Fix common data quality issues: trim spaces, fill blanks, fix case, remove special chars</div></div></div>`;
+
+  if (!workbook) { panel.insertAdjacentHTML('beforeend', noFileMsg()); return; }
+
+  panel.insertAdjacentHTML('beforeend', `
+    <div class="op-card"><div class="op-card-header">⚙️ Cleaning Operations</div><div class="op-card-body">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px">
+        <label style="font-size:12px; display:flex; align-items:center; gap:6px; cursor:pointer; padding:6px; border:1px solid #ddd; border-radius:4px">
+          <input type="checkbox" id="cleanTrim" checked> ✂️ Trim whitespace
+        </label>
+        <label style="font-size:12px; display:flex; align-items:center; gap:6px; cursor:pointer; padding:6px; border:1px solid #ddd; border-radius:4px">
+          <input type="checkbox" id="cleanUpper"> 🔠 UPPERCASE
+        </label>
+        <label style="font-size:12px; display:flex; align-items:center; gap:6px; cursor:pointer; padding:6px; border:1px solid #ddd; border-radius:4px">
+          <input type="checkbox" id="cleanLower"> 🔡 lowercase
+        </label>
+        <label style="font-size:12px; display:flex; align-items:center; gap:6px; cursor:pointer; padding:6px; border:1px solid #ddd; border-radius:4px">
+          <input type="checkbox" id="cleanProper"> 📝 Proper Case
+        </label>
+        <label style="font-size:12px; display:flex; align-items:center; gap:6px; cursor:pointer; padding:6px; border:1px solid #ddd; border-radius:4px">
+          <input type="checkbox" id="cleanSpecial"> 🧹 Remove special chars
+        </label>
+        <label style="font-size:12px; display:flex; align-items:center; gap:6px; cursor:pointer; padding:6px; border:1px solid #ddd; border-radius:4px">
+          <input type="checkbox" id="cleanBlanks"> 🔲 Fill blank cells with 0
+        </label>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Apply to Column</label>
+          <select id="cleanCol"><option value="__all__">All Columns</option>${currentHeaders.map(h=>`<option>${h}</option>`).join('')}</select>
+        </div>
+        <button class="btn btn-green" onclick="doClean()">🧹 Clean Now</button>
+      </div>
+      <div id="cleanResult"></div>
+    </div></div>
+
+    <div class="op-card"><div class="op-card-header">📚 Data Cleaning in Excel</div><div class="op-card-body">
+      <div class="func-grid">
+        <div class="func-item"><div class="fi-func">=TRIM(A1)</div><div class="fi-desc">Remove leading, trailing, extra spaces</div></div>
+        <div class="func-item"><div class="fi-func">=CLEAN(A1)</div><div class="fi-desc">Remove non-printable characters</div></div>
+        <div class="func-item"><div class="fi-func">=UPPER(A1)</div><div class="fi-desc">Convert text to uppercase</div></div>
+        <div class="func-item"><div class="fi-func">=PROPER(A1)</div><div class="fi-desc">Capitalize first letter of each word</div></div>
+        <div class="func-item"><div class="fi-func">=SUBSTITUTE(A1," ","_")</div><div class="fi-desc">Replace spaces with underscores</div></div>
+        <div class="func-item"><div class="fi-func">=IF(A1="",0,A1)</div><div class="fi-desc">Replace empty cells with 0</div></div>
+      </div>
+    </div></div>`);
+}
+
+function doClean() {
+  const trim = document.getElementById('cleanTrim').checked;
+  const upper = document.getElementById('cleanUpper').checked;
+  const lower = document.getElementById('cleanLower').checked;
+  const proper = document.getElementById('cleanProper').checked;
+  const special = document.getElementById('cleanSpecial').checked;
+  const blanks = document.getElementById('cleanBlanks').checked;
+  const col = document.getElementById('cleanCol').value;
+  const cols = col === '__all__' ? currentHeaders : [col];
+  let changes = 0;
+
+  currentData = currentData.map(row => {
+    const newRow = {...row};
+    cols.forEach(h => {
+      let v = String(newRow[h] ?? '');
+      const orig = v;
+      if (trim) v = v.trim().replace(/\s+/g, ' ');
+      if (upper) v = v.toUpperCase();
+      else if (lower) v = v.toLowerCase();
+      else if (proper) v = v.replace(/\b\w/g, c => c.toUpperCase());
+      if (special) v = v.replace(/[^\w\s.,\-@]/g, '');
+      if (blanks && v === '') v = '0';
+      if (v !== orig) changes++;
+      newRow[h] = v;
+    });
+    return newRow;
+  });
+
+  document.getElementById('cleanResult').innerHTML = `
+    <div class="info-box info-green">✅ Cleaned <b>${changes}</b> cell(s)</div>
+    <div style="margin-top:10px">${buildTableHTML(currentHeaders, currentData, 50)}</div>`;
+  showToast(`Cleaned ${changes} cells`, 'success');
+}
+
+// ─── CONDITIONAL FORMATTING ───
+function renderConditional(panel) {
+  panel.innerHTML = `<div class="op-header"><span class="oh-icon">🎨</span><div><div class="oh-title">Conditional Formatting</div><div class="oh-desc">Highlight cells based on rules — color cells that meet conditions</div></div></div>`;
+
+  if (!workbook) { panel.insertAdjacentHTML('beforeend', noFileMsg()); renderCondGuide(panel); return; }
+
+  const colOpts = currentHeaders.map(h=>`<option>${h}</option>`).join('');
+  panel.insertAdjacentHTML('beforeend', `
+    <div class="op-card"><div class="op-card-header">⚙️ Highlight Configuration</div><div class="op-card-body">
+      <div class="form-row">
+        <div class="form-group"><label>Column</label><select id="cfCol">${colOpts}</select></div>
+        <div class="form-group"><label>Rule</label>
+          <select id="cfRule">
+            <option value="gt">Greater Than</option>
+            <option value="lt">Less Than</option>
+            <option value="eq">Equals</option>
+            <option value="contains">Contains Text</option>
+            <option value="top10">Top 10%</option>
+            <option value="bottom10">Bottom 10%</option>
+            <option value="above_avg">Above Average</option>
+            <option value="below_avg">Below Average</option>
+            <option value="empty">Empty Cells</option>
+            <option value="duplicate">Duplicate Values</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Value</label><input type="text" id="cfVal" placeholder="e.g. 100"></div>
+        <div class="form-group"><label>Highlight Color</label>
+          <select id="cfColor">
+            <option value="red">🔴 Red</option>
+            <option value="green">🟢 Green</option>
+            <option value="yellow">🟡 Yellow</option>
+            <option value="blue">🔵 Blue</option>
+            <option value="orange">🟠 Orange</option>
+          </select>
+        </div>
+        <button class="btn btn-green" onclick="doConditional()">🎨 Apply</button>
+      </div>
+      <div id="cfResult"></div>
+    </div></div>`);
+  renderCondGuide(panel);
+}
+
+function doConditional() {
+  const col = document.getElementById('cfCol').value;
+  const rule = document.getElementById('cfRule').value;
+  const val = document.getElementById('cfVal').value;
+  const color = document.getElementById('cfColor').value;
+  const numVal = parseFloat(val);
+
+  const colorMap = { red: '#ffe0e0', green: '#d5f5e3', yellow: '#fff9c4', blue: '#d6eaf8', orange: '#fdebd0' };
+  const borderMap = { red: '#e74c3c', green: '#27ae60', yellow: '#f1c40f', blue: '#2980b9', orange: '#e67e22' };
+  const bg = colorMap[color];
+  const bd = borderMap[color];
+
+  const numVals = currentData.map(r => parseFloat(r[col])).filter(v => !isNaN(v));
+  const avg = numVals.length ? numVals.reduce((a,b)=>a+b,0)/numVals.length : 0;
+  const sorted10 = [...numVals].sort((a,b)=>b-a);
+  const top10threshold = sorted10[Math.floor(sorted10.length * 0.1)] ?? Infinity;
+  const bot10threshold = [...numVals].sort((a,b)=>a-b)[Math.floor(numVals.length * 0.1)] ?? -Infinity;
+  const keySet = new Set();
+  currentData.forEach(r => { const k = String(r[col]??''); if (keySet.has(k)); else keySet.add(k); });
+
+  // Just show visual highlight table
+  const headers = currentHeaders;
+  const tableHTML = `<table class="spreadsheet-table" style="width:100%; font-size:12px; border-collapse:collapse">
+    <thead><tr><th class="row-header">#</th>${headers.map(h=>`<th>${escHtml(h)}</th>`).join('')}</tr></thead>
+    <tbody>${currentData.slice(0,100).map((row, i) => {
+      const cv = row[col]; const cn = parseFloat(cv); const cvs = String(cv??'').toLowerCase();
+      const dupCounts = currentData.filter(r => String(r[col]??'') === String(cv??'')).length;
+      let match = false;
+      switch(rule) {
+        case 'gt': match = cn > numVal; break;
+        case 'lt': match = cn < numVal; break;
+        case 'eq': match = cvs === val.toLowerCase(); break;
+        case 'contains': match = cvs.includes(val.toLowerCase()); break;
+        case 'top10': match = cn >= top10threshold; break;
+        case 'bottom10': match = cn <= bot10threshold; break;
+        case 'above_avg': match = cn > avg; break;
+        case 'below_avg': match = cn < avg; break;
+        case 'empty': match = cvs === ''; break;
+        case 'duplicate': match = dupCounts > 1; break;
+      }
+      const cells = headers.map(h => {
+        const hl = h === col && match;
+        return `<td style="${hl ? `background:${bg}; border:1px solid ${bd}; font-weight:600` : 'border:1px solid #ddd'}">${escHtml(String(row[h]??''))}</td>`;
+      }).join('');
+      return `<tr><td class="row-num" style="background:#f2f2f2; border:1px solid #ddd; color:#666; font-size:11px; text-align:center; padding:3px 8px">${i+1}</td>${cells}</tr>`;
+    }).join('')}</tbody></table>`;
+
+  document.getElementById('cfResult').innerHTML = `
+    <div class="info-box info-green" style="margin:10px 0">🎨 Conditional formatting applied — highlighted cells shown in <b>${color}</b></div>
+    <div style="overflow:auto; max-height:300px; border:1px solid #ddd; border-radius:4px">${tableHTML}</div>`;
+}
+
+function renderCondGuide(panel) {
+  panel.insertAdjacentHTML('beforeend', `
+    <div class="op-card"><div class="op-card-header">📚 Conditional Formatting in Excel</div><div class="op-card-body">
+      <div class="info-box info-green">
+        <b>How to use in Excel:</b><br>
+        1. Select your data range<br>
+        2. Home → Conditional Formatting<br>
+        3. Choose a rule type:<br>
+        &nbsp;&nbsp;• <b>Highlight Cell Rules:</b> Greater Than, Less Than, Equals, Between, Contains<br>
+        &nbsp;&nbsp;• <b>Top/Bottom Rules:</b> Top 10, Bottom 10%, Above Average<br>
+        &nbsp;&nbsp;• <b>Data Bars:</b> Mini bar charts inside cells<br>
+        &nbsp;&nbsp;• <b>Color Scales:</b> Red-Yellow-Green gradient<br>
+        &nbsp;&nbsp;• <b>Icon Sets:</b> Arrows, flags, stars based on values<br>
+        &nbsp;&nbsp;• <b>New Rule:</b> Write custom formula like =A1>AVERAGE($A:$A)
+      </div>
+    </div></div>`);
+}
+
+// ─── SHORTCUTS ───
+function renderShortcuts(panel) {
+  panel.innerHTML = `<div class="op-header"><span class="oh-icon">⌨️</span><div><div class="oh-title">Excel Keyboard Shortcuts</div><div class="oh-desc">Master these shortcuts to work 10x faster in Excel</div></div></div>`;
+
+  const cats = [
+    { name: '⌨️ Navigation', shortcuts: [
+      ['Ctrl+Home', 'Go to cell A1'],['Ctrl+End', 'Go to last used cell'],
+      ['Ctrl+→/←', 'Jump to edge of data'],['Ctrl+↑/↓', 'Jump up/down in data'],
+      ['Ctrl+F6', 'Switch between workbooks'],['F5 or Ctrl+G', 'Go To dialog box'],
+      ['Ctrl+Page Up/Down', 'Switch worksheet tabs'],['Alt+Page Up/Down', 'Move screen left/right'],
+    ]},
+    { name: '✏️ Editing', shortcuts: [
+      ['Ctrl+C', 'Copy'],['Ctrl+X', 'Cut'],['Ctrl+V', 'Paste'],
+      ['Ctrl+Z', 'Undo'],['Ctrl+Y', 'Redo'],
+      ['F2', 'Edit selected cell'],['Esc', 'Cancel cell edit'],
+      ['Delete', 'Clear cell contents'],['Ctrl+Delete', 'Delete to end of line'],
+      ['Ctrl+D', 'Fill Down'],['Ctrl+R', 'Fill Right'],
+      ['Ctrl+;', 'Insert current date'],["Ctrl+Shift+;", 'Insert current time'],
+      ['Ctrl+\'', 'Copy formula from cell above'],
+    ]},
+    { name: '🔢 Formulas', shortcuts: [
+      ['=', 'Start a formula'],['Alt+=', 'AutoSum selected range'],
+      ['F4', 'Toggle absolute/relative reference ($A$1)'],
+      ['Ctrl+`', 'Show/hide all formulas'],
+      ['Ctrl+Shift+U', 'Expand/collapse formula bar'],
+      ['Ctrl+Shift+Enter', 'Enter array formula (legacy)'],
+      ['Shift+F3', 'Insert Function wizard'],
+      ['Tab', 'Accept function suggestion'],
+    ]},
+    { name: '📊 Selection & Format', shortcuts: [
+      ['Ctrl+A', 'Select all / Select current region'],
+      ['Ctrl+Shift+*', 'Select current region (data only)'],
+      ['Ctrl+Space', 'Select entire column'],
+      ['Shift+Space', 'Select entire row'],
+      ['Ctrl+B', 'Bold'],['Ctrl+I', 'Italic'],['Ctrl+U', 'Underline'],
+      ['Ctrl+1', 'Format Cells dialog'],['Ctrl+Shift+$', 'Currency format'],
+      ['Ctrl+Shift+%', 'Percent format'],['Ctrl+Shift+#', 'Date format'],
+      ['Alt+H+H', 'Fill color'],['Alt+H+FC', 'Font color'],
+    ]},
+    { name: '📁 File & View', shortcuts: [
+      ['Ctrl+S', 'Save'],['Ctrl+O', 'Open'],['Ctrl+N', 'New workbook'],
+      ['Ctrl+W', 'Close workbook'],['Ctrl+P', 'Print'],
+      ['Ctrl+F', 'Find'],['Ctrl+H', 'Find & Replace'],
+      ['Ctrl+Shift+L', 'Toggle AutoFilter'],
+      ['Alt+F11', 'Open VBA Editor'],
+      ['F11', 'Create chart in new sheet'],
+      ['Ctrl+Shift+&', 'Apply outline border'],
+      ['Ctrl+F1', 'Show/hide ribbon'],
+    ]},
+  ];
+
+  cats.forEach(cat => {
+    const div = document.createElement('div');
+    div.className = 'op-card';
+    div.innerHTML = `<div class="op-card-header">${cat.name}</div>
+    <div class="op-card-body"><div class="shortcut-grid">
+      ${cat.shortcuts.map(([k,d])=>`<div class="shortcut-item"><span class="kbd">${k}</span><span>${d}</span></div>`).join('')}
+    </div></div>`;
+    panel.appendChild(div);
+  });
+}
+
+// ─── GUIDE ───
+function renderGuide(panel) {
+  panel.innerHTML = `<div class="op-header"><span class="oh-icon">📚</span><div><div class="oh-title">Complete MS Excel Guide 2026</div><div class="oh-desc">Everything you need to know about Microsoft Excel — from basics to advanced</div></div></div>`;
+
+  const topics = [
+    { icon: '🚀', title: 'Getting Started', content: `
+      <b>Interface:</b> Title Bar → Ribbon → Formula Bar → Worksheet → Sheet Tabs → Status Bar<br><br>
+      <b>Cell Basics:</b><br>
+      • Every cell has an address: Column Letter + Row Number (e.g., A1, B5, Z100)<br>
+      • Click a cell to select it → type to enter data → Enter to confirm<br>
+      • Double-click to edit existing content<br>
+      • A cell can hold: Text, Numbers, Dates, Formulas, Booleans<br><br>
+      <b>Data Types:</b><br>
+      • <b>Numbers:</b> Right-aligned by default<br>
+      • <b>Text:</b> Left-aligned by default<br>
+      • <b>Dates:</b> Stored as serial numbers (Jan 1 1900 = 1)<br>
+      • <b>Booleans:</b> TRUE or FALSE<br>
+      • <b>Formulas:</b> Always start with = sign
+    `},
+    { icon: '📊', title: 'Workbooks & Worksheets', content: `
+      <b>Workbook:</b> The Excel file (.xlsx) — contains multiple sheets<br>
+      <b>Worksheet:</b> A single tab within a workbook (max 1,048,576 rows × 16,384 cols)<br><br>
+      <b>Sheet Operations:</b><br>
+      • Add sheet: Click + icon at bottom, or right-click tab → Insert<br>
+      • Rename: Double-click tab name<br>
+      • Move: Drag tab to new position<br>
+      • Copy: Hold Ctrl and drag a sheet tab<br>
+      • Delete: Right-click → Delete<br>
+      • Color: Right-click → Tab Color<br><br>
+      <b>Reference another sheet in formula:</b><br>
+      =Sheet2!A1 (sheet name + ! + cell address)
+    `},
+    { icon: '🔢', title: 'Number Formatting', content: `
+      Format cells with Ctrl+1 or Home → Number group<br><br>
+      <b>Common Formats:</b><br>
+      • General: Default — auto-detects type<br>
+      • Number: 1,234.56 (with thousands separator)<br>
+      • Currency: $1,234.56<br>
+      • Accounting: Aligns $ and decimal points<br>
+      • Date: 11-May-2026 or 05/11/2026<br>
+      • Percentage: 75% (multiplies by 100)<br>
+      • Fraction: 3/4<br>
+      • Scientific: 1.23E+06<br>
+      • Text: Forces cell to be treated as text<br><br>
+      <b>Custom Formats:</b><br>
+      0.00 → two decimal places<br>
+      #,##0 → thousands separator, no decimals<br>
+      "₹"#,##0.00 → Indian rupee symbol<br>
+      [Red]Negative;[Green]Positive → color by value
+    `},
+    { icon: '📋', title: 'Tables & Named Ranges', content: `
+      <b>Excel Tables (Ctrl+T):</b><br>
+      • Auto-expanding range with formatted headers<br>
+      • Auto-filter dropdowns on all columns<br>
+      • Structured references: =Table1[Sales] instead of =B:B<br>
+      • Total row with auto-calculations<br>
+      • Works great with PivotTables<br><br>
+      <b>Named Ranges:</b><br>
+      • Select a range → Name Box (top-left) → type a name<br>
+      • Or: Formulas → Define Name<br>
+      • Use name in formulas: =SUM(SalesData) instead of =SUM(B2:B100)<br>
+      • Makes formulas readable and maintainable<br><br>
+      <b>Dynamic Named Ranges:</b><br>
+      =OFFSET(Sheet1!$A$1,0,0,COUNTA(Sheet1!$A:$A),1)<br>
+      Auto-expands as data is added
+    `},
+    { icon: '🎨', title: 'Formatting & Styles', content: `
+      <b>Cell Formatting:</b><br>
+      • Font: Calibri (default), size, bold/italic/underline, color<br>
+      • Alignment: Left/Center/Right, Top/Middle/Bottom, Wrap Text, Merge Cells<br>
+      • Borders: Outline, inside, thick, thin, dashed, color<br>
+      • Fill: Solid color, gradient, pattern<br><br>
+      <b>Cell Styles (Home → Cell Styles):</b><br>
+      Pre-built formatting combinations for headings, data, calculated cells<br><br>
+      <b>Themes (Page Layout → Themes):</b><br>
+      Consistent fonts and colors across entire workbook<br><br>
+      <b>Format Painter (Home → 🖌️):</b><br>
+      Click once: copies format to one destination<br>
+      Double-click: copies format to multiple destinations (Esc to stop)
+    `},
+    { icon: '📈', title: 'Charts & Data Visualization', content: `
+      <b>Creating Charts:</b><br>
+      1. Select data → Insert → Charts → Choose type<br>
+      2. Recommended Charts shows AI-suggested chart types<br>
+      3. Use F11 for instant chart in new sheet<br><br>
+      <b>Chart Types Guide:</b><br>
+      • Column/Bar: Compare categories<br>
+      • Line: Trends over time<br>
+      • Pie/Doughnut: Part of a whole (max 6 slices)<br>
+      • Scatter: Correlation between variables<br>
+      • Waterfall: Running totals (budgets, cash flow)<br>
+      • Combo: Two different chart types in one<br>
+      • Sparklines: Mini charts inside cells<br><br>
+      <b>Dynamic Charts:</b><br>
+      Link chart to a Table — it updates automatically as data grows
+    `},
+    { icon: '🔒', title: 'Protection & Security', content: `
+      <b>Protect Worksheet:</b><br>
+      Review → Protect Sheet → set password → restrict editing<br>
+      Users can still view but cannot edit locked cells<br><br>
+      <b>Protect Workbook:</b><br>
+      Review → Protect Workbook → prevents adding/deleting sheets<br><br>
+      <b>Lock Specific Cells:</b><br>
+      1. Select ALL cells → Format Cells → Protection → uncheck Locked<br>
+      2. Select cells you WANT to lock → check Locked<br>
+      3. Review → Protect Sheet<br><br>
+      <b>File Password:</b><br>
+      File → Info → Protect Workbook → Encrypt with Password<br><br>
+      <b>Hidden Formulas:</b><br>
+      Format Cells → Protection → Hidden → then protect sheet
+    `},
+    { icon: '⚡', title: 'Power Features', content: `
+      <b>Flash Fill (Ctrl+E):</b><br>
+      Excel learns patterns and fills columns automatically<br>
+      Example: Type "John Smith" from "JOHN SMITH" — Excel fills the rest<br><br>
+      <b>Power Query (Get & Transform):</b><br>
+      Data → Get Data → import from CSV, database, web, etc.<br>
+      Clean, reshape and transform data with a visual editor<br>
+      Refreshable — update with one click when source changes<br><br>
+      <b>Power Pivot:</b><br>
+      Handle millions of rows, create data models, DAX formulas<br><br>
+      <b>Goal Seek:</b><br>
+      Data → What-If Analysis → Goal Seek<br>
+      "I want B2 to equal 500 — what should A1 be?"<br><br>
+      <b>Solver:</b><br>
+      Data → Solver — optimize a value subject to constraints<br><br>
+      <b>Macros & VBA:</b><br>
+      Developer → Record Macro → automate repetitive tasks<br>
+      Alt+F11 to open VBA Editor for custom code
+    `},
+  ];
+
+  topics.forEach(t => {
+    const div = document.createElement('div');
+    div.className = 'op-card';
+    div.innerHTML = `<div class="op-card-header">${t.icon} ${t.title}</div>
+    <div class="op-card-body"><div class="info-box info-green">${t.content}</div></div>`;
+    panel.appendChild(div);
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  EXPORT
+// ═══════════════════════════════════════════════
+function exportFile(fmt) {
+  if (!workbook) { showToast('No file loaded', 'error'); return; }
+
+  if (fmt === 'csv') {
+    const csv = XLSX.utils.sheet_to_csv(currentSheet);
+    downloadBlob(new Blob([csv], {type:'text/csv'}), fileName.replace(/\.\w+$/,'.csv'));
+    showToast('CSV downloaded!', 'success');
+  } else {
+    // Rebuild workbook from currentData (with changes)
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(currentData, { header: currentHeaders });
+    XLSX.utils.book_append_sheet(wb, ws, currentSheetName);
+    XLSX.writeFile(wb, fileName.replace(/\.\w+$/,'.xlsx'));
+    showToast('Excel file saved!', 'success');
+  }
+}
+
+function downloadBlob(blob, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+}
+
+// ═══════════════════════════════════════════════
+//  UTILITIES
+// ═══════════════════════════════════════════════
+function applyFormat(type) {
+  showToast(`Format "${type}" applied (for actual effect, edit the Excel file directly)`, 'success');
+}
+
+function fmt(n) {
+  if (isNaN(n)) return '—';
+  if (Math.abs(n) >= 1e6) return (n/1e6).toFixed(2) + 'M';
+  if (Math.abs(n) >= 1e3) return (n/1e3).toFixed(2) + 'K';
+  return parseFloat(n.toFixed(4)).toLocaleString();
+}
+
+function formatBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(1) + ' MB';
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function showLoading(show) {
+  document.getElementById('loadingOverlay').classList.toggle('show', show);
+}
+
+// Init
+document.getElementById('statusText').textContent = '✅ Ready — May 2026';
+</script>
+
+<!-- Footer -->
+<div style="background:#1a1a1a; color:#888; text-align:center; padding:6px; font-size:11px; letter-spacing:0.5px; border-top:2px solid var(--excel-green)">
+  Developed by <span style="color:#2d9b5e; font-weight:700">Yash Jain</span> &nbsp;|&nbsp; Excel Interactive Lab 2026 &nbsp;|&nbsp; All Excel Operations in One Place
+</div>
+
+</body>
+</html>
